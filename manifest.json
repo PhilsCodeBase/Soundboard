@@ -1,1 +1,5 @@
-[]
+[
+  { "file": "Amber Overwatch.mp3", "label": "Cinema Movie", "emoji": "👏", "key": "1", "color": "#ffb454" },
+  //{ "file": "drumroll.mp3", "label": "Trommelwirbel", "emoji": "🥁", "key": "2" }
+
+]
