@@ -114,7 +114,15 @@
     opacity:0; background:rgba(0,0,0,.32); border:none; color:var(--text); width:22px;height:22px; border-radius:var(--radius-sm);
     display:flex; align-items:center; justify-content:center; transition:opacity .12s, background .12s;
   }
-  .pad:hover .pad-edit, .pad:focus-within .pad-edit{opacity:1;}
+  .pad-top-actions{display:flex; gap:5px;}
+  .pad-stop{
+    opacity:0; background:rgba(0,0,0,.32); border:none; color:var(--text); width:22px;height:22px; border-radius:var(--radius-sm);
+    display:flex; align-items:center; justify-content:center; transition:opacity .12s, background .12s;
+  }
+  .pad.playing .pad-stop{opacity:1;}
+  .pad-stop:hover{background:rgba(255,93,93,.5);}
+  .pad-stop svg{width:10px;height:10px;}
+  .pad:hover .pad-edit, .pad:focus-within .pad-edit, .pad:hover .pad-stop, .pad:focus-within .pad-stop{opacity:1;}
   .pad-edit:hover{background:rgba(0,0,0,.55);}
   .pad-edit svg{width:12px;height:12px;}
 
@@ -471,7 +479,8 @@
     const icons = {
       pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
       plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
-      mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>'
+      mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>',
+      stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>'
     };
     return icons[name] || "";
   }
@@ -515,7 +524,10 @@
               <span class="pad-index">${String(i+1).padStart(2,"0")}</span>
               <span class="pad-badge">${badgeText(pad)}</span>
             </div>
-            <button class="pad-edit" data-edit="${pad.id}" title="Bearbeiten" type="button">${iconSvg("pencil")}</button>
+            <div class="pad-top-actions">
+              <button class="pad-stop" data-stop="${pad.id}" title="Stoppen" type="button">${iconSvg("stop")}</button>
+              <button class="pad-edit" data-edit="${pad.id}" title="Bearbeiten" type="button">${iconSvg("pencil")}</button>
+            </div>
           </div>
           <div>
             <div class="pad-emoji">${pad.emoji || "🔊"}</div>
@@ -568,6 +580,15 @@
       const editBtn = el.querySelector("[data-edit]");
       editBtn.addEventListener("pointerdown", (e) => { e.stopPropagation(); });
       editBtn.addEventListener("click", (e) => { e.stopPropagation(); openModal(pad.id); });
+
+      const stopBtn = el.querySelector("[data-stop]");
+      if(stopBtn){
+        stopBtn.addEventListener("pointerdown", (e) => { e.stopPropagation(); });
+        stopBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          stopPad(pad.id);
+        });
+      }
 
       const fader = el.querySelector(".pad-fader");
       if(fader){
@@ -672,6 +693,11 @@
     audio.addEventListener("timeupdate", () => {
       if(audio.duration) setProgress(pad.id, audio.currentTime / audio.duration);
     });
+    audio.addEventListener("error", () => {
+      updatePlayingClass(pad.id, false);
+      setProgress(pad.id, 0);
+      toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden — Datei fehlt oder ist beschädigt.");
+    });
     padAudioElements.set(pad.id, audio);
     return audio;
   }
@@ -691,7 +717,7 @@
 
   async function playPad(pad){
     const audio = await ensureAudioElement(pad);
-    if(!audio){ toast("Sound konnte nicht geladen werden."); return; }
+    if(!audio){ toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden."); return; }
     audio.volume = volume;
     audio.playbackRate = pad.speed || 1;
     try{
@@ -702,7 +728,17 @@
       updatePlayingClass(pad.id, true);
     }catch(err){
       updatePlayingClass(pad.id, false);
+      toast("„" + (pad.label || "Sound") + "“ konnte nicht abgespielt werden.");
     }
+  }
+
+  function stopPad(padId){
+    const audio = padAudioElements.get(padId);
+    if(audio){
+      try{ audio.pause(); audio.currentTime = 0; }catch(e){}
+    }
+    updatePlayingClass(padId, false);
+    setProgress(padId, 0);
   }
 
   function updatePlayingClass(padId, on){
