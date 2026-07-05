@@ -8,10 +8,10 @@
   { "file": "raus.m4a", "label": "Raus", "emoji": "", "key": "7", "color": "#ffb454" },
   { "file": "spass.m4a", "label": "Spasss", "emoji": "", "key": "8", "color": "#ffb454" },
   { "file": "hund.m4a", "label": "Hund", "emoji": "", "key": "9", "color": "#ffb454" },
-  { "file": "charakter.m4a", "label": "Charakter", "emoji": "", "key": "Q", "color": "#ffb454" },
-  { "file": "Wassermann.mp3", "label": "Wassermann", "emoji": "", "key": "W", "color": "#ffb454" },
-  { "file": "Güstrow.mp3", "label": "Güstrow", "emoji": "", "key": "E", "color": "#ffb454" },
-  { "file": "FrolicMeme.m4a", "label": "Lustig", "emoji": "", "key": "R", "color": "#ffb454" },
-  { "file": "fremdgehen.m4a", "label": "Fremdgehen", "emoji": "", "key": "T", "color": "#ffb454" },
-  { "file": "WerWirdMillionaer.mp3", "label": "Wer Wird Millionär", "emoji": "", "key": "Z", "color": "#ffb454" }
+  { "file": "charakter.m4a", "label": "Charakter", "emoji": "", "key": "w", "color": "#ffb454" },
+  { "file": "Wassermann.mp3", "label": "Wassermann", "emoji": "", "key": "w", "color": "#ffb454" },
+  { "file": "Güstrow.mp3", "label": "Güstrow", "emoji": "", "key": "e", "color": "#ffb454" },
+  { "file": "FrolicMeme.m4a", "label": "Lustig", "emoji": "", "key": "r", "color": "#ffb454" },
+  { "file": "fremdgehen.m4a", "label": "Fremdgehen", "emoji": "", "key": "t", "color": "#ffb454" },
+  { "file": "WerWirdMillionaer.mp3", "label": "Wer Wird Millionär", "emoji": "", "key": "z", "color": "#ffb454" }
 ]
