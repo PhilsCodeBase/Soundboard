@@ -1,6 +1,6 @@
 [
   { "file": "Mann.m4a", "label": "Mann", "emoji": "", "key": "1", "color": "#ffb454" },
-  { "file": "gänsehosen.m4a", "label": "Gänsehosen", "emoji": "", "key": "2", "color": "#ffb454" },
+  { "file": "gaensehosen.m4a", "label": "Gänsehosen", "emoji": "", "key": "2", "color": "#ffb454" },
   { "file": "Daswarsehrschonmeme.m4a", "label": "sehr schon", "emoji": "", "key": "3", "color": "#ffb454" },
   { "file": "Nein.m4a", "label": "Nein", "emoji": "", "key": "4", "color": "#ffb454" },
   { "file": "Okay.m4a", "label": "Okaaaay", "emoji": "", "key": "5", "color": "#ffb454" },
@@ -13,5 +13,5 @@
   { "file": "Güstrow.mp3", "label": "Güstrow", "emoji": "", "key": "E", "color": "#ffb454" },
   { "file": "FrolicMeme.m4a", "label": "Lustig", "emoji": "", "key": "R", "color": "#ffb454" },
   { "file": "fremdgehen.m4a", "label": "Fremdgehen", "emoji": "", "key": "T", "color": "#ffb454" },
-  { "file": "WerWirdMillionär.mp3", "label": "WerWirdMillionär", "emoji": "", "key": "Z", "color": "#ffb454" }
+  { "file": "WerWirdMillionaer.mp3", "label": "WerWirdMillionär", "emoji": "", "key": "Z", "color": "#ffb454" }
 ]
