@@ -14,17 +14,16 @@
   { "file": "FrolicMeme.m4a", "label": "Lustig", "emoji": "", "key": "r", "color": "#ffb454" },
   { "file": "fremdgehen.m4a", "label": "Fremdgehen", "emoji": "", "key": "t", "color": "#ffb454" },
   { "file": "WerWirdMillionaer.mp3", "label": "Wer Wird Millionär", "emoji": "", "key": "z", "color": "#ffb454" },
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
-  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" }
+  { "file": "aua.mp3", "label": "Aua", "emoji": "", "key": "u", "color": "#ffb454" },
+  { "file": "Airhorn.mp3", "label": "Airhorn", "emoji": "", "key": "i", "color": "#ffb454" },
+  { "file": "Fail.mp3", "label": "Fail", "emoji": "", "key": "o", "color": "#ffb454" },
+  { "file": "Fanfare.mp3", "label": "Fanfare", "emoji": "", "key": "p", "color": "#ffb454" },
+  { "file": "Sieg.mp3", "label": "Sieg", "emoji": "", "key": "a", "color": "#ffb454" },
+  { "file": "WindowsXP.mp3", "label": "WindowsXP", "emoji": "", "key": "s", "color": "#ffb454" },
+  { "file": "Polizei.mp3", "label": "Polizei", "emoji": "", "key": "d", "color": "#ffb454" },
+  { "file": "NeinAllesGute.mp3", "label": "NeinAllesGute", "emoji": "", "key": "f", "color": "#ffb454" },
+  { "file": "GibsKeineBeweise.mp3", "label": "Gibs keine Beweise", "emoji": "", "key": "g", "color": "#ffb454" },
+  { "file": "Fart.mp3", "label": "Fart", "emoji": "", "key": "h", "color": "#ffb454" },
+  { "file": "DrumRoll.mp3", "label": "DrumRoll", "emoji": "", "key": "j", "color": "#ffb454" },
+  { "file": "Bezahlung.mp3", "label": "Bezahlung", "emoji": "", "key": "k", "color": "#ffb454" }
 ]
