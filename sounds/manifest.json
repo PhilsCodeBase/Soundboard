@@ -25,5 +25,7 @@
   { "file": "GibsKeineBeweise.mp3", "label": "Gibs keine Beweise", "emoji": "", "key": "g", "color": "#ffb454" },
   { "file": "Fart.mp3", "label": "Fart", "emoji": "", "key": "h", "color": "#ffb454" },
   { "file": "DrumRoll.mp3", "label": "DrumRoll", "emoji": "", "key": "j", "color": "#ffb454" },
-  { "file": "Bezahlung.mp3", "label": "Bezahlung", "emoji": "", "key": "k", "color": "#ffb454" }
+  { "file": "Bezahlung.mp3", "label": "Bezahlung", "emoji": "", "key": "k", "color": "#ffb454" },
+  { "file": "Telefon.mp3", "label": "Telefon", "emoji": "", "key": "y", "color": "#ffb454" },
+  { "file": "Applaus.mp3", "label": "Applaus", "emoji": "", "key": "x", "color": "#ffb454" }
 ]
