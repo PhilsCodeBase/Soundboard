@@ -2,12 +2,12 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-FQHEQKdzoycm2HFaWb78tFaqQwLYQF7T4JB35lhzCwk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ojSPJMjfT6RfI3dkhBGWpmmyPTGvC8myTlIcV4tUwbo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Soundboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  @font-face{font-family:'JetBrains Mono'; font-style:normal; font-weight:400 700; font-display:swap; src:url(fonts/JetBrainsMono-latin.woff2) format('woff2');}
+  @font-face{font-family:'IBM Plex Sans'; font-style:normal; font-weight:400 600; font-display:swap; src:url(fonts/IBMPlexSans-latin.woff2) format('woff2');}
   :root{
     --bg:#141413;
     --panel:#1c1b19;
@@ -219,6 +219,21 @@
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .toast .dot{width:6px;height:6px;border-radius:50%; background:var(--accent);}
 
+  .midi-chip{padding:5px 8px 5px 13px;}
+  .midi-chip select{width:auto; max-width:190px; padding:4px 6px; font-size:12px; color-scheme:dark;}
+  .midi-chip .btn{padding:5px 9px; border-color:transparent; background:transparent;}
+  .midi-chip .btn:hover{border-color:var(--border-strong);}
+  .midi-led{width:7px; height:7px; border-radius:50%; background:var(--border-strong); flex:none;}
+  .midi-led.on{background:var(--accent-2); box-shadow:0 0 6px var(--accent-2);}
+  .midi-last{font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); min-width:30px;}
+  .btn.learn-active{border-color:var(--accent); color:var(--accent); background:var(--accent-dim);}
+  .midi-hint{font-family:var(--font-mono); font-size:11.5px; line-height:1.5; color:var(--accent-2); margin:12px 0 0;}
+  .pad-key.pad-midi{color:var(--accent-2);}
+  .pad.learn-candidate{outline:1px dashed var(--border-strong); outline-offset:2px;}
+  .pad.learn-target{outline:2px solid var(--accent); outline-offset:2px;}
+  .midi-assign{display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);}
+  .midi-assign .reset-link{margin:0;}
+
   .visually-hidden-file{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; white-space:nowrap; border:0;}
   .hidden-input{display:none;}
 </style>
@@ -240,6 +255,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
       Alle stoppen
     </button>
+    <div class="chip midi-chip">
+      <span class="midi-led" id="midiLed" title="Leuchtet bei jedem Tastenanschlag vom Controller"></span>
+      <button class="btn" id="midiEnableBtn" type="button">MIDI aktivieren</button>
+      <select id="midiInputSelect" class="hidden-input" aria-label="MIDI-Gerät"></select>
+      <span class="midi-last hidden-input" id="midiLast" title="Zuletzt empfangene Taste"></span>
+      <button class="btn hidden-input" id="midiLearnBtn" type="button">Anlernen</button>
+    </div>
     <div class="spacer"></div>
     <button class="btn ghost" id="exportBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -259,6 +281,7 @@
       Zurücksetzen
     </button>
   </div>
+  <p class="midi-hint hidden-input" id="midiHint" aria-live="polite"></p>
 </header>
 
 <main>
@@ -284,6 +307,14 @@
       <div class="field">
         <label>Tastenkürzel</label>
         <select id="keySelect"></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>MIDI-Taste</label>
+      <div class="midi-assign">
+        <span id="midiAssignText"></span>
+        <button class="reset-link hidden-input" id="midiClearBtn" type="button">Zuweisung entfernen</button>
       </div>
     </div>
 
@@ -398,9 +429,13 @@
   const LS_PADS = "soundboard_pads_v4";
   const LS_VOL = "soundboard_volume_v4";
   const LS_HIDDEN = "soundboard_hidden_repo_v4";
+  const LS_MIDI = "soundboard_midi_v1";
 
   let pads = [];
   let volume = 0.85;
+  let midiAccess = null;
+  let midiLearnActive = false;
+  let midiLearnTargetId = null;
   const objectUrls = new Map();       // padId -> playable URL
   const padAudioElements = new Map(); // padId -> persistent <audio> element
 
@@ -437,6 +472,14 @@
       if(p.key){
         if(seen.has(p.key)) p.key = "";
         else seen.add(p.key);
+      }
+    });
+    const seenMidi = new Set();
+    pads.forEach(p => {
+      if(p.midi){
+        const id = p.midi.channel + ":" + p.midi.note;
+        if(seenMidi.has(id)) delete p.midi;
+        else seenMidi.add(id);
       }
     });
   }
@@ -556,6 +599,7 @@
       el.className = "pad" + (pad.hasSound ? "" : " empty");
       el.style.setProperty("--pad-color", pad.color);
       el.dataset.id = pad.id;
+      if(midiLearnActive) el.classList.add(pad.id === midiLearnTargetId ? "learn-target" : "learn-candidate");
       el.tabIndex = 0;
       el.setAttribute("role", "button");
 
@@ -582,7 +626,7 @@
             <span class="pad-speed-val" data-speedval="${escapeHtml(pad.id)}">${(Number(pad.speed)||1).toFixed(2)}×</span>
           </div>
           <div class="pad-bottom">
-            <span></span>
+            ${midiBadge(pad)}
             ${pad.key ? `<span class="pad-key">${escapeHtml(pad.key)}</span>` : "<span></span>"}
           </div>
           <div class="progress-track"><div class="progress-bar" data-progress="${escapeHtml(pad.id)}"></div></div>`;
@@ -600,7 +644,7 @@
             <div class="pad-empty-label">Leer</div>
           </div>
           <div class="pad-bottom">
-            <span></span>
+            ${midiBadge(pad)}
             ${pad.key ? `<span class="pad-key">${escapeHtml(pad.key)}</span>` : "<span></span>"}
           </div>`;
       }
@@ -627,7 +671,8 @@
           cleanup();
           el.classList.remove("pressed");
           if(!moved){
-            if(pad.hasSound){ playPad(pad); }
+            if(midiLearnActive){ setMidiLearnTarget(pad.id); }
+            else if(pad.hasSound){ playPad(pad); }
             else{ openModal(pad.id); }
           }
         };
@@ -649,7 +694,9 @@
         if(e.target !== el) return;
         if(e.key === "Enter" || e.key === " "){
           e.preventDefault();
-          if(pad.hasSound){ playPad(pad); } else { openModal(pad.id); }
+          if(midiLearnActive){ setMidiLearnTarget(pad.id); }
+          else if(pad.hasSound){ playPad(pad); }
+          else { openModal(pad.id); }
         }
       });
 
@@ -686,6 +733,7 @@
           if(valEl) valEl.textContent = val.toFixed(2) + "×";
           const audio = padAudioElements.get(pad.id);
           if(audio) audio.playbackRate = val;
+          if(!isNormalSpeed(pad)) moveVoicesToElement(pad);
         });
         fader.addEventListener("change", () => saveState());
       }
@@ -726,8 +774,195 @@
       });
     }
 
+    padVoices.forEach((voices, padId) => updatePlayingClass(padId, true));
     prewarmAll();
   }
+
+  /* ---------------- MIDI ---------------- */
+  const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const midiEnableBtn = document.getElementById("midiEnableBtn");
+  const midiInputSelect = document.getElementById("midiInputSelect");
+  const midiLearnBtn = document.getElementById("midiLearnBtn");
+  const midiLed = document.getElementById("midiLed");
+  const midiLast = document.getElementById("midiLast");
+  const midiHint = document.getElementById("midiHint");
+  let midiPrefs = { enabled: false, inputId: "all", inputName: "" };
+  let midiInputSignature = null;
+  let midiLedTimer = null;
+
+  function loadMidiPrefs(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(LS_MIDI) || "null");
+      if(saved && typeof saved === "object"){
+        midiPrefs.enabled = saved.enabled === true;
+        if(typeof saved.inputId === "string") midiPrefs.inputId = saved.inputId;
+        if(typeof saved.inputName === "string") midiPrefs.inputName = saved.inputName;
+      }
+    }catch(e){}
+  }
+  function saveMidiPrefs(){
+    localStorage.setItem(LS_MIDI, JSON.stringify(midiPrefs));
+  }
+
+  // Note 60 heisst C3, so wie in GarageBand.
+  function noteName(note){
+    return NOTE_NAMES[note % 12] + (Math.floor(note / 12) - 2);
+  }
+  function midiLabel(midi){
+    return noteName(midi.note) + " · Kanal " + (midi.channel + 1);
+  }
+  function midiBadge(pad){
+    if(!pad.midi) return "<span></span>";
+    return `<span class="pad-key pad-midi" title="${escapeHtml(midiLabel(pad.midi))}">${escapeHtml(noteName(pad.midi.note))}</span>`;
+  }
+
+  function showMidiHint(text){
+    midiHint.textContent = text || "";
+    midiHint.classList.toggle("hidden-input", !text);
+  }
+  function refreshLearnHint(){
+    if(!midiLearnActive){ showMidiHint(""); return; }
+    const target = pads.find(p => p.id === midiLearnTargetId);
+    showMidiHint(target
+      ? "Drücke jetzt eine Taste am Controller für „" + (target.label || "Ohne Titel") + "“. Mit Esc beendest du das Anlernen."
+      : "Klicke auf das Pad, das du belegen möchtest. Mit Esc beendest du das Anlernen.");
+  }
+  function setMidiLearnTarget(padId){
+    midiLearnTargetId = padId;
+    grid.querySelectorAll(".pad[data-id]").forEach(el => {
+      const isTarget = el.dataset.id === padId;
+      el.classList.toggle("learn-target", isTarget);
+      el.classList.toggle("learn-candidate", !isTarget);
+    });
+    refreshLearnHint();
+  }
+  function setMidiLearnActive(active){
+    midiLearnActive = active;
+    midiLearnTargetId = null;
+    midiLearnBtn.textContent = active ? "Anlernen beenden" : "Anlernen";
+    midiLearnBtn.classList.toggle("learn-active", active);
+    render();
+    refreshLearnHint();
+  }
+
+  function learnNote(channel, note){
+    const pad = pads.find(p => p.id === midiLearnTargetId);
+    if(!pad) return;
+    const previous = pads.find(p => p.id !== pad.id && p.midi && p.midi.channel === channel && p.midi.note === note);
+    if(previous) delete previous.midi;
+    pad.midi = { channel, note };
+    saveState();
+    const index = pads.indexOf(pad);
+    const next = pads.slice(index + 1).find(p => p.hasSound && !p.midi);
+    midiLearnTargetId = next ? next.id : null;
+    render();
+    refreshLearnHint();
+    toast(noteName(note) + " → " + (pad.label || "Ohne Titel") + (previous ? " (von „" + (previous.label || "Ohne Titel") + "“ übernommen)" : ""));
+  }
+
+  function flashMidiLed(note){
+    midiLast.textContent = noteName(note);
+    midiLed.classList.add("on");
+    clearTimeout(midiLedTimer);
+    midiLedTimer = setTimeout(() => midiLed.classList.remove("on"), 120);
+  }
+
+  function onMidiMessage(e){
+    const data = e.data;
+    if(!data || data.length < 3) return;
+    // Nur "Note On" mit Anschlagstärke > 0 löst aus. Clock, Regler und "Note Off" nicht.
+    if((data[0] & 0xF0) !== 0x90 || data[2] === 0) return;
+    const channel = data[0] & 0x0F;
+    const note = data[1];
+    flashMidiLed(note);
+    if(midiLearnActive){ learnNote(channel, note); return; }
+    const pad = pads.find(p => p.midi && p.midi.channel === channel && p.midi.note === note);
+    if(!pad || !pad.hasSound) return;
+    const ctx = getAudioCtx();
+    if(ctx.state !== "running"){
+      // Der Browser gibt Ton erst nach einem Klick frei. Ein Start jetzt würde sich bis dahin aufstauen.
+      ctx.resume().catch(() => {});
+      toast("Bitte einmal in die Seite klicken, damit der Browser den Ton freigibt.");
+      return;
+    }
+    playPad(pad, { overlap: true });
+  }
+
+  function refreshMidiInputs(){
+    if(!midiAccess) return;
+    const inputs = [...midiAccess.inputs.values()].filter(input => input.state === "connected");
+    const selectedInput = inputs.find(input => input.id === midiPrefs.inputId);
+    if(selectedInput) midiPrefs.inputName = selectedInput.name || "";
+
+    const signature = JSON.stringify([inputs.map(input => [input.id, input.name]), midiPrefs.inputId]);
+    if(signature !== midiInputSignature){
+      midiInputSignature = signature;
+      midiInputSelect.textContent = "";
+      const addOption = (value, text) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        midiInputSelect.appendChild(option);
+      };
+      addOption("all", inputs.length ? "Alle Geräte" : "Kein Gerät gefunden");
+      inputs.forEach(input => addOption(input.id, input.name || "MIDI-Gerät"));
+      if(midiPrefs.inputId !== "all" && !selectedInput){
+        addOption(midiPrefs.inputId, (midiPrefs.inputName || "MIDI-Gerät") + " (nicht verbunden)");
+      }
+      midiInputSelect.value = midiPrefs.inputId;
+    }
+
+    midiAccess.inputs.forEach(input => {
+      input.onmidimessage = (midiPrefs.inputId === "all" || input.id === midiPrefs.inputId) ? onMidiMessage : null;
+    });
+  }
+
+  async function connectMidi(){
+    if(!navigator.requestMIDIAccess){
+      toast("Dieser Browser unterstützt kein MIDI. Bitte Chrome oder Edge nutzen.");
+      return;
+    }
+    try{
+      // Ohne SysEx: Die App liest nur Signale und kann das Gerät nicht umkonfigurieren.
+      midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    }catch(err){
+      console.error(err);
+      midiPrefs.enabled = false;
+      saveMidiPrefs();
+      toast("Kein MIDI-Zugriff erhalten. Bitte im Browser erlauben.");
+      return;
+    }
+    midiAccess.onstatechange = refreshMidiInputs;
+    midiPrefs.enabled = true;
+    saveMidiPrefs();
+    midiEnableBtn.classList.add("hidden-input");
+    [midiInputSelect, midiLast, midiLearnBtn].forEach(el => el.classList.remove("hidden-input"));
+    refreshMidiInputs();
+    getAudioCtx().resume().catch(() => {});
+    prewarmAll();
+  }
+
+  async function restoreMidi(){
+    if(!midiPrefs.enabled || !navigator.requestMIDIAccess || !navigator.permissions) return;
+    // Beim Laden nur verbinden, wenn die Erlaubnis schon besteht. Sonst nicht ungefragt nachfragen.
+    try{
+      const status = await navigator.permissions.query({ name: "midi" });
+      if(status.state === "granted") await connectMidi();
+    }catch(err){}
+  }
+
+  midiEnableBtn.addEventListener("click", connectMidi);
+  midiInputSelect.addEventListener("change", () => {
+    midiPrefs.inputId = midiInputSelect.value;
+    refreshMidiInputs();
+    saveMidiPrefs();
+  });
+  midiLearnBtn.addEventListener("click", () => setMidiLearnActive(!midiLearnActive));
+
+  function unlockAudio(){
+    if(window.__sbCtx && window.__sbCtx.state === "suspended") window.__sbCtx.resume().catch(() => {});
+  }
+  ["pointerdown", "pointerup", "keydown"].forEach(type => window.addEventListener(type, unlockAudio, true));
 
   function escapeHtml(str){
     return String(str).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -749,6 +984,11 @@
       hasSound: !!raw.hasSound,
       hasOverride: !!raw.hasOverride
     };
+    const midi = raw.midi;
+    const validMidi = midi && Number.isInteger(midi.channel) && midi.channel >= 0 && midi.channel <= 15
+      && Number.isInteger(midi.note) && midi.note >= 0 && midi.note <= 127;
+    if(validMidi) pad.midi = { channel: midi.channel, note: midi.note };
+    else delete pad.midi;
     if(typeof raw.soundFile !== "string" || !/^sounds\/[^:\\]+$/.test(raw.soundFile) || raw.soundFile.includes("..")) delete pad.soundFile;
     return pad;
   }
@@ -767,6 +1007,8 @@
   }
 
   function invalidatePadAudio(padId){
+    stopVoices(padId);
+    padBuffers.delete(padId);
     const audio = padAudioElements.get(padId);
     if(audio){
       try{ audio.pause(); }catch(e){}
@@ -809,6 +1051,7 @@
   async function prewarmPad(pad){
     if(!pad.hasSound) return;
     try{ await ensureAudioElement(pad); }catch(e){}
+    if(midiAccess) ensureBuffer(pad);
   }
   function prewarmAll(){
     pads.forEach(pad => { prewarmPad(pad); });
@@ -819,7 +1062,141 @@
     if(bar) bar.style.width = Math.max(0, Math.min(1, ratio)) * 100 + "%";
   }
 
-  async function playPad(pad){
+  /* ---------------- Low-latency playback (active once MIDI is on) ----------------
+     Decoded buffers start without the delay of an <audio> element and can overlap.
+     At speeds other than 1x the <audio> element stays in use, because it keeps the
+     pitch when the speed changes and a buffer source would not. */
+  const MAX_DECODE_BYTES = 30 * 1024 * 1024;
+  const MAX_VOICES_PER_PAD = 8;
+  const padBuffers = new Map(); // padId -> { buffer, promise }
+  const padVoices = new Map();  // padId -> running voices, oldest first
+  let decodeQueue = Promise.resolve();
+  let masterGain = null;
+  let progressFrame = null;
+
+  function getMasterGain(){
+    if(!masterGain){
+      const ctx = getAudioCtx();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = volume;
+      masterGain.connect(ctx.destination);
+    }
+    return masterGain;
+  }
+
+  function ensureBuffer(pad){
+    const existing = padBuffers.get(pad.id);
+    if(existing) return existing.promise;
+    const entry = { buffer: null, promise: null };
+    // One after the other, so a large board does not decode everything at once.
+    entry.promise = decodeQueue.then(async () => {
+      const url = await ensureUrl(pad);
+      if(!url) return null;
+      const res = await fetch(url);
+      if(!res.ok) return null;
+      const data = await res.arrayBuffer();
+      if(data.byteLength > MAX_DECODE_BYTES) return null;
+      entry.buffer = await getAudioCtx().decodeAudioData(data);
+      return entry.buffer;
+    }).catch((err) => { console.error(err); return null; });
+    decodeQueue = entry.promise;
+    padBuffers.set(pad.id, entry);
+    return entry.promise;
+  }
+
+  function fadeOutVoice(voice){
+    const now = getAudioCtx().currentTime;
+    voice.source.onended = null;
+    voice.gain.gain.setTargetAtTime(0, now, 0.004);
+    try{ voice.source.stop(now + 0.02); }catch(e){}
+  }
+
+  function stopVoices(padId){
+    const voices = padVoices.get(padId);
+    if(!voices) return;
+    voices.forEach(fadeOutVoice);
+    padVoices.delete(padId);
+  }
+
+  function startVoice(pad, buffer, overlap){
+    if(!overlap) stopVoices(pad.id);
+    const ctx = getAudioCtx();
+    const voices = padVoices.get(pad.id) || [];
+    while(voices.length >= MAX_VOICES_PER_PAD) fadeOutVoice(voices.shift());
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = buffer;
+    source.connect(gain);
+    gain.connect(getMasterGain());
+    const voice = { source, gain, startedAt: ctx.currentTime, duration: buffer.duration };
+    source.onended = () => {
+      const current = padVoices.get(pad.id);
+      if(!current) return;
+      const i = current.indexOf(voice);
+      if(i !== -1) current.splice(i, 1);
+      if(current.length === 0){
+        padVoices.delete(pad.id);
+        updatePlayingClass(pad.id, false);
+        setProgress(pad.id, 0);
+      }
+    };
+    source.start();
+    voices.push(voice);
+    padVoices.set(pad.id, voices);
+    updatePlayingClass(pad.id, true);
+    runProgressLoop();
+  }
+
+  function runProgressLoop(){
+    if(progressFrame !== null) return;
+    const tick = () => {
+      progressFrame = null;
+      if(padVoices.size === 0) return;
+      const now = getAudioCtx().currentTime;
+      padVoices.forEach((voices, padId) => {
+        const newest = voices[voices.length - 1];
+        setProgress(padId, (now - newest.startedAt) / newest.duration);
+      });
+      progressFrame = requestAnimationFrame(tick);
+    };
+    progressFrame = requestAnimationFrame(tick);
+  }
+
+  function isNormalSpeed(pad){
+    return Math.abs((Number(pad.speed) || 1) - 1) < 0.001;
+  }
+
+  // Moving the speed fader during buffer playback continues the sound on the <audio> element.
+  async function moveVoicesToElement(pad){
+    const voices = padVoices.get(pad.id);
+    if(!voices) return;
+    const newest = voices[voices.length - 1];
+    const position = getAudioCtx().currentTime - newest.startedAt;
+    const audio = await ensureAudioElement(pad);
+    if(!audio) return;
+    stopVoices(pad.id);
+    audio.volume = volume;
+    audio.playbackRate = pad.speed || 1;
+    try{
+      audio.currentTime = position;
+      await audio.play();
+      updatePlayingClass(pad.id, true);
+    }catch(err){
+      updatePlayingClass(pad.id, false);
+    }
+  }
+
+  async function playPad(pad, options){
+    const overlap = !!(options && options.overlap);
+    const entry = padBuffers.get(pad.id);
+    if(entry && entry.buffer && isNormalSpeed(pad) && getAudioCtx().state === "running"){
+      const element = padAudioElements.get(pad.id);
+      if(element){ try{ element.pause(); element.currentTime = 0; }catch(e){} }
+      startVoice(pad, entry.buffer, overlap);
+      return;
+    }
+    stopVoices(pad.id);
     const audio = await ensureAudioElement(pad);
     if(!audio){ toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden."); return; }
     audio.volume = volume;
@@ -837,6 +1214,7 @@
   }
 
   function stopPad(padId){
+    stopVoices(padId);
     const audio = padAudioElements.get(padId);
     if(audio){
       try{ audio.pause(); audio.currentTime = 0; }catch(e){}
@@ -902,6 +1280,11 @@
   }
 
   function stopAll(){
+    [...padVoices.keys()].forEach(padId => {
+      stopVoices(padId);
+      updatePlayingClass(padId, false);
+      setProgress(padId, 0);
+    });
     padAudioElements.forEach((audio, padId) => {
       try{ audio.pause(); audio.currentTime = 0; }catch(e){}
       updatePlayingClass(padId, false);
@@ -945,6 +1328,7 @@
   const trimExistingBtn = document.getElementById("trimExistingBtn");
   const sourceTag = document.getElementById("sourceTag");
   const deletePadBtn = document.getElementById("deletePadBtn");
+  const midiClearBtn = document.getElementById("midiClearBtn");
   const recordBtn = document.getElementById("recordBtn");
   const recordTimerEl = document.getElementById("recordTimer");
   const editorPanel = document.getElementById("editorPanel");
@@ -1255,6 +1639,7 @@
     labelInput.value = pad.label || "";
     emojiInput.value = pad.emoji || "";
     refreshSourceUI(pad);
+    refreshMidiAssign(pad);
 
     const usedKeys = new Set(pads.filter(p => p.id !== padId).map(p => p.key).filter(Boolean));
     keySelect.innerHTML = `<option value="">— keins —</option>` +
@@ -1277,6 +1662,20 @@
     overlay.classList.add("open");
     labelInput.focus();
   }
+
+  function refreshMidiAssign(pad){
+    document.getElementById("midiAssignText").textContent = pad.midi ? midiLabel(pad.midi) : "Nicht zugewiesen";
+    midiClearBtn.classList.toggle("hidden-input", !pad.midi);
+  }
+  midiClearBtn.addEventListener("click", () => {
+    const pad = pads.find(p => p.id === editingId);
+    if(!pad) return;
+    delete pad.midi;
+    saveState();
+    render();
+    refreshMidiAssign(pad);
+    toast("MIDI-Zuweisung entfernt.");
+  });
 
   function refreshSourceUI(pad){
     if(pad.source === "repo"){
@@ -1426,6 +1825,7 @@
   volumeSlider.addEventListener("input", () => {
     volume = parseFloat(volumeSlider.value);
     padAudioElements.forEach(a => { try{ a.volume = volume; }catch(e){} });
+    if(masterGain) masterGain.gain.value = volume;
     saveState();
   });
   document.getElementById("stopAllBtn").addEventListener("click", stopAll);
@@ -1433,6 +1833,10 @@
   /* ---------------- Keyboard shortcuts ---------------- */
   window.addEventListener("keydown", (e) => {
     if(e.repeat) return;
+    if(e.key === "Escape" && midiLearnActive && !overlay.classList.contains("open")){
+      setMidiLearnActive(false);
+      return;
+    }
     const tag = (e.target.tagName || "").toLowerCase();
     if(tag === "input" || tag === "select" || tag === "textarea") return;
     if(overlay.classList.contains("open")) return;
@@ -1553,7 +1957,8 @@
     if(!confirm("Wirklich alle gespeicherten Daten für dieses Soundboard löschen (eigene Sounds, Einstellungen, Lautstärke) und die Seite neu laden?")) return;
     try{
       padAudioElements.forEach(audio => { try{ audio.pause(); }catch(e){} });
-      localStorage.clear();
+      // Nur eigene Einträge löschen: Andere Apps auf derselben Domain teilen sich diesen Speicher.
+      Object.keys(localStorage).filter(key => key.startsWith("soundboard_")).forEach(key => localStorage.removeItem(key));
       await new Promise((resolve) => {
         const req = indexedDB.deleteDatabase(DB_NAME);
         req.onsuccess = () => resolve();
@@ -1569,10 +1974,12 @@
   /* ---------------- Init ---------------- */
   (async function init(){
     loadLocalState();
+    loadMidiPrefs();
     volumeSlider.value = volume;
     renderSkeleton();
     await loadManifestAndMerge();
     render();
+    await restoreMidi();
   })();
 })();
 </script>
