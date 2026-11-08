@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BDOFgq2wTTMiVm0erKvzasJZXUnfH6UNUdhRquTrXFE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fom2TfmdPQ7CEjcYD6JZtfMZll4KciiC5FPN/G2EkSM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Soundboard</title>
 <style>
@@ -329,6 +329,13 @@
         <button class="mode-btn" type="button" data-setting="retrigger" data-value="stop" title="Ein laufender Sound wird angehalten">Stoppen</button>
       </div>
     </div>
+    <div class="setting hidden-input" id="touchSetting">
+      <span class="setting-label" id="touchLabel">Antippen</span>
+      <div class="mode-switch" role="group" aria-labelledby="touchLabel">
+        <button class="mode-btn" type="button" data-setting="touch" data-value="instant" title="Spielt schon beim Berühren, wie ein Drum-Pad">Sofort</button>
+        <button class="mode-btn" type="button" data-setting="touch" data-value="release" title="Spielt erst beim Loslassen, damit man über die Pads scrollen kann">Beim Loslassen</button>
+      </div>
+    </div>
     <div class="setting">
       <span class="setting-label">MIDI</span>
     <div class="chip midi-chip">
@@ -527,6 +534,8 @@
   const LS_MIDI = "soundboard_midi_v1";
   const LS_MODE = "soundboard_mode_v1";
   const LS_RETRIGGER = "soundboard_retrigger_v1";
+  const LS_TOUCH = "soundboard_touch_v1";
+  let touchMode = "instant"; // "instant" = Touch spielt beim Antippen, "release" = erst beim Loslassen (scrollsicher)
 
   let pads = [];
   let playMode = "multi"; // "multi" = gleichzeitig, "single" = neuer Sound stoppt den alten
@@ -557,6 +566,7 @@
     volume = v !== null ? parseFloat(v) : 0.85;
     playMode = localStorage.getItem(LS_MODE) === "single" ? "single" : "multi";
     retriggerMode = localStorage.getItem(LS_RETRIGGER) === "stop" ? "stop" : "restart";
+    touchMode = localStorage.getItem(LS_TOUCH) === "release" ? "release" : "instant";
   }
   function saveState(){
     localStorage.setItem(LS_PADS, JSON.stringify(pads));
@@ -753,10 +763,14 @@
           </div>`;
       }
 
-      // primary trigger: tap-detection so scrolling never accidentally fires a pad,
-      // while a genuine tap still triggers on release with no artificial delay.
+      // Anschlag: Maus, Stift und (je nach Einstellung) Touch spielen schon beim Herunterdrücken,
+      // wie bei einem Drum-Pad. Mit "Beim Loslassen" löst Touch erst beim Loslassen aus, damit
+      // man über die Pads scrollen kann, ohne versehentlich Sounds zu spielen.
       el.addEventListener("pointerdown", (e) => {
         if(e.target.closest("[data-edit]") || e.target.closest(".pad-fader") || e.target.closest("[data-stop]") || e.target.closest("[data-handle]")) return;
+        if(e.pointerType === "mouse" && e.button !== 0) return;
+        const instant = pad.hasSound && !midiLearnActive && (e.pointerType !== "touch" || touchMode === "instant");
+        if(instant) playPad(pad, { gesture: true });
         const startX = e.clientX, startY = e.clientY;
         const pointerId = e.pointerId;
         let moved = false;
@@ -774,9 +788,9 @@
           if(ev.pointerId !== pointerId) return;
           cleanup();
           el.classList.remove("pressed");
-          if(!moved){
+          if(!moved && !instant){
             if(midiLearnActive){ setMidiLearnTarget(pad.id); }
-            else if(pad.hasSound){ playPad(pad); }
+            else if(pad.hasSound){ playPad(pad, { gesture: true }); }
             else{ openModal(pad.id); }
           }
         };
@@ -799,7 +813,7 @@
         if(e.key === "Enter" || e.key === " "){
           e.preventDefault();
           if(midiLearnActive){ setMidiLearnTarget(pad.id); }
-          else if(pad.hasSound){ playPad(pad); }
+          else if(pad.hasSound){ playPad(pad, { gesture: true }); }
           else { openModal(pad.id); }
         }
       });
@@ -1160,7 +1174,7 @@
   async function prewarmPad(pad){
     if(!pad.hasSound) return;
     try{ await ensureAudioElement(pad); }catch(e){}
-    if(midiAccess) ensureBuffer(pad);
+    ensureBuffer(pad);
   }
   function prewarmAll(){
     pads.forEach(pad => { prewarmPad(pad); });
@@ -1171,11 +1185,12 @@
     if(bar) bar.style.width = Math.max(0, Math.min(1, ratio)) * 100 + "%";
   }
 
-  /* ---------------- Low-latency playback (active once MIDI is on) ----------------
-     Decoded buffers start without the delay of an <audio> element and can overlap.
+  /* ---------------- Low-latency playback ----------------
+     Decoded buffers (sounds up to MAX_BUFFER_SECONDS) start without the delay of an <audio> element and can overlap.
      At speeds other than 1x the <audio> element stays in use, because it keeps the
      pitch when the speed changes and a buffer source would not. */
   const MAX_DECODE_BYTES = 30 * 1024 * 1024;
+  const MAX_BUFFER_SECONDS = 20;
   const MAX_VOICES_PER_PAD = 8;
   const padBuffers = new Map(); // padId -> { buffer, promise }
   const padVoices = new Map();  // padId -> running voices, oldest first
@@ -1205,7 +1220,11 @@
       if(!res.ok) return null;
       const data = await res.arrayBuffer();
       if(data.byteLength > MAX_DECODE_BYTES) return null;
-      entry.buffer = await getAudioCtx().decodeAudioData(data);
+      const decoded = await getAudioCtx().decodeAudioData(data);
+      // Lange Sounds (Musik, Einspieler) brauchen entpackt viel Speicher und keine Millisekunden-Reaktion.
+      // Sie laufen weiter über das <audio>-Element.
+      if(decoded.duration > MAX_BUFFER_SECONDS) return null;
+      entry.buffer = decoded;
       return entry.buffer;
     }).catch((err) => { console.error(err); return null; });
     decodeQueue = entry.promise;
@@ -1327,6 +1346,17 @@
     return !!(audio && !audio.paused && !audio.ended);
   }
 
+  // Kurzer optischer Anschlag. Läuft über die Animations-Schnittstelle, ohne das Layout neu zu berechnen.
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function flashPad(padId){
+    const el = grid.querySelector(`.pad[data-id="${padId}"]`);
+    if(!el || !el.animate) return;
+    const frames = reducedMotion
+      ? [{ filter: "brightness(1.4)" }, { filter: "brightness(1)" }]
+      : [{ transform: "scale(0.96)", filter: "brightness(1.45)" }, { transform: "scale(1)", filter: "brightness(1)" }];
+    el.animate(frames, { duration: 150, easing: "cubic-bezier(.2,.7,.3,1)" });
+  }
+
   let playRequest = 0;
   async function playPad(pad, options){
     const request = ++playRequest;
@@ -1339,12 +1369,19 @@
     if(single) stopOtherPads(pad.id);
     const overlap = !single && retriggerMode === "restart" && !!(options && options.overlap);
     const entry = padBuffers.get(pad.id);
-    if(entry && entry.buffer && isNormalSpeed(pad) && getAudioCtx().state === "running"){
+    // Bei einem Klick oder Tastendruck gibt der Browser den Ton im selben Moment frei.
+    // Deshalb darf der schnelle Weg auch dann starten, wenn der Ton gerade erst aufwacht.
+    const state = getAudioCtx().state;
+    const audioReady = state === "running" || (state === "suspended" && !!(options && options.gesture));
+    if(entry && entry.buffer && isNormalSpeed(pad) && audioReady){
+      if(state !== "running") getAudioCtx().resume().catch(() => {});
       const element = padAudioElements.get(pad.id);
       if(element){ try{ element.pause(); element.currentTime = 0; }catch(e){} }
       startVoice(pad, entry.buffer, overlap);
+      flashPad(pad.id);
       return;
     }
+    flashPad(pad.id);
     stopVoices(pad.id);
     const audio = await ensureAudioElement(pad);
     if(!audio){ toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden."); return; }
@@ -1511,7 +1548,12 @@
   let currentAudioBuffer = null;
 
   function getAudioCtx(){
-    if(!window.__sbCtx) window.__sbCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(!window.__sbCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      // "interactive" = kleinster Ausgabepuffer, den das System erlaubt.
+      try{ window.__sbCtx = new Ctx({ latencyHint: "interactive" }); }
+      catch(e){ window.__sbCtx = new Ctx(); }
+    }
     return window.__sbCtx;
   }
 
@@ -2132,16 +2174,25 @@
     multi: "Gleichzeitig: Sounds laufen übereinander.",
     single: "Einzeln: Ein neuer Sound stoppt den vorherigen.",
     restart: "Nochmal drücken startet den Sound neu.",
-    stop: "Nochmal drücken stoppt den Sound."
+    stop: "Nochmal drücken stoppt den Sound.",
+    instant: "Sofort: Pads spielen schon beim Antippen.",
+    release: "Beim Loslassen: Über die Pads lässt sich scrollen."
   };
+  // Die Touch-Einstellung ist nur auf Geräten mit Touchscreen sinnvoll.
+  if(navigator.maxTouchPoints > 0) document.getElementById("touchSetting").classList.remove("hidden-input");
   function showPlayMode(){
     modeButtons.forEach(btn => {
-      const current = btn.dataset.setting === "retrigger" ? retriggerMode : playMode;
+      const setting = btn.dataset.setting;
+      const current = setting === "retrigger" ? retriggerMode : setting === "touch" ? touchMode : playMode;
       btn.setAttribute("aria-pressed", String(btn.dataset.value === current));
     });
   }
   modeButtons.forEach(btn => btn.addEventListener("click", () => {
-    if(btn.dataset.setting === "retrigger"){
+    if(btn.dataset.setting === "touch"){
+      touchMode = btn.dataset.value === "release" ? "release" : "instant";
+      try{ localStorage.setItem(LS_TOUCH, touchMode); }catch(e){}
+      toast(MODE_TOASTS[touchMode]);
+    } else if(btn.dataset.setting === "retrigger"){
       retriggerMode = btn.dataset.value === "stop" ? "stop" : "restart";
       try{ localStorage.setItem(LS_RETRIGGER, retriggerMode); }catch(e){}
       toast(MODE_TOASTS[retriggerMode]);
@@ -2168,7 +2219,7 @@
     if(overlay.classList.contains("open")) return;
     const key = e.key.toLowerCase();
     const pad = pads.find(p => p.key === key);
-    if(pad && pad.hasSound) playPad(pad);
+    if(pad && pad.hasSound) playPad(pad, { gesture: true });
   });
 
   /* ---------------- Export / Import ---------------- */
