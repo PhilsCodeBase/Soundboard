@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-N1I509SZq0B7zXJVw6nRtWgDqbyjNtzvx094hQofUZ8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kQwn60Yafb8CF1gM9/c7szhgWD/mrpiALumQ4QZ54L8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Soundboard</title>
 <style>
@@ -81,7 +81,7 @@
   input[type=range]::-moz-range-thumb{width:11px;height:11px;border-radius:2px; background:var(--accent); border:none; cursor:pointer;}
 
   main{max-width:1180px; margin:0 auto; padding:8px 24px 0;}
-  .pads{display:grid; grid-template-columns:repeat(auto-fill, minmax(158px,1fr)); gap:12px;}
+  .pads{display:grid; grid-template-columns:repeat(auto-fill, minmax(124px,1fr)); gap:10px;}
 
   .pad{
     position:relative; aspect-ratio:1/1; background:var(--panel);
@@ -141,18 +141,6 @@
   .pad-label{font-family:var(--font-body); font-weight:600; font-size:13px; line-height:1.25; word-break:break-word;}
   .pad-empty-label{font-size:11px; font-family:var(--font-mono); margin-top:4px;}
 
-  .pad-fader-row{display:flex; align-items:center; gap:6px;}
-  .pad-fader{
-    -webkit-appearance:none; flex:1; height:14px; background:transparent; margin:0;
-  }
-  .pad-fader::-webkit-slider-runnable-track{height:2px; background:var(--border-strong); border-radius:1px;}
-  .pad-fader::-webkit-slider-thumb{
-    -webkit-appearance:none; width:8px; height:14px; border-radius:1px; margin-top:-6px;
-    background:var(--pad-color, var(--accent)); cursor:pointer; border:none;
-  }
-  .pad-fader::-moz-range-track{height:2px; background:var(--border-strong); border-radius:1px;}
-  .pad-fader::-moz-range-thumb{width:8px; height:14px; border-radius:1px; background:var(--pad-color, var(--accent)); border:none; cursor:pointer;}
-  .pad-speed-val{font-family:var(--font-mono); font-size:8.5px; color:var(--text-faint); min-width:26px; text-align:right;}
 
   .pad-bottom{display:flex; align-items:center; justify-content:space-between; gap:6px;}
   .pad-key{font-family:var(--font-mono); font-size:9px; color:var(--text-dim); background:rgba(255,255,255,.05); border:1px solid var(--border); padding:2px 5px; border-radius:var(--radius-sm); text-transform:uppercase;}
@@ -275,7 +263,7 @@
     header{padding:28px 16px 18px;}
     main{padding:8px 16px 0;}
     footer.manage{padding:18px 16px 0;}
-    .pads{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;}
+    .pads{grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;}
     .pad{padding:10px;}
     .btn.stop-all{flex:1 1 auto; justify-content:center;}
     .volume-chip{flex:1 1 auto;}
@@ -497,6 +485,9 @@
       <div class="fx-row"><label for="fxVolume">Lautstärke</label><input type="range" id="fxVolume" min="0" max="2" step="0.01"><span class="fx-val" id="fxVolumeVal"></span></div>
       <div class="fx-row"><label for="fxHp">Hochpass</label><input type="range" id="fxHp" min="0" max="100" step="1"><span class="fx-val" id="fxHpVal"></span></div>
       <div class="fx-row"><label for="fxLp">Tiefpass</label><input type="range" id="fxLp" min="0" max="100" step="1"><span class="fx-val" id="fxLpVal"></span></div>
+      <div class="fx-row"><label for="fxPitch">Tonhöhe</label><input type="range" id="fxPitch" min="-12" max="12" step="1"><span class="fx-val" id="fxPitchVal"></span></div>
+      <div class="fx-row"><label for="fxDist">Verzerrung</label><input type="range" id="fxDist" min="0" max="100" step="1"><span class="fx-val" id="fxDistVal"></span></div>
+      <div class="fx-row"><label for="fxReverb">Hall</label><input type="range" id="fxReverb" min="0" max="100" step="1"><span class="fx-val" id="fxReverbVal"></span></div>
       <label class="enh"><input type="checkbox" id="fxReverse"><span><b>Rückwärts abspielen</b></span></label>
       <div class="fx-sub">Automatisch verbessern</div>
       <div class="fx-enh">
@@ -773,10 +764,6 @@
             <div class="pad-emoji">${escapeHtml(pad.emoji || "🔊")}</div>
             <div class="pad-label">${escapeHtml(pad.label || "Ohne Titel")}</div>
           </div>
-          <div class="pad-fader-row">
-            <input type="range" class="pad-fader" data-speed="${escapeHtml(pad.id)}" min="0.5" max="2" step="0.01" value="${Number(pad.speed) || 1}">
-            <span class="pad-speed-val" data-speedval="${escapeHtml(pad.id)}">${(Number(pad.speed)||1).toFixed(2)}×</span>
-          </div>
           <div class="pad-bottom">
             ${midiBadge(pad)}
             ${pad.key ? `<span class="pad-key">${escapeHtml(pad.key)}</span>` : "<span></span>"}
@@ -805,7 +792,7 @@
       // wie bei einem Drum-Pad. Mit "Beim Loslassen" löst Touch erst beim Loslassen aus, damit
       // man über die Pads scrollen kann, ohne versehentlich Sounds zu spielen.
       el.addEventListener("pointerdown", (e) => {
-        if(e.target.closest("[data-edit]") || e.target.closest(".pad-fader") || e.target.closest("[data-stop]") || e.target.closest("[data-handle]")) return;
+        if(e.target.closest("[data-edit]") || e.target.closest("[data-stop]") || e.target.closest("[data-handle]")) return;
         if(e.pointerType === "mouse" && e.button !== 0) return;
         const instant = pad.hasSound && !midiLearnActive && (e.pointerType !== "touch" || touchMode === "instant");
         if(instant) playPad(pad, { gesture: true });
@@ -877,21 +864,6 @@
           startPadDrag(pad.id, el, e);
         });
         handle.addEventListener("click", (e) => e.stopPropagation());
-      }
-
-      const fader = el.querySelector(".pad-fader");
-      if(fader){
-        fader.addEventListener("pointerdown", (e) => e.stopPropagation());
-        fader.addEventListener("input", () => {
-          const val = parseFloat(fader.value);
-          pad.speed = val;
-          const valEl = el.querySelector(`[data-speedval="${CSS.escape(pad.id)}"]`);
-          if(valEl) valEl.textContent = val.toFixed(2) + "×";
-          const audio = padAudioElements.get(pad.id);
-          if(audio) audio.playbackRate = val;
-          if(!isNormalSpeed(pad)) moveVoicesToElement(pad);
-        });
-        fader.addEventListener("change", () => saveState());
       }
 
       el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("dragover"); });
@@ -1160,12 +1132,14 @@
 
   /* ---------------- Klang-Einstellungen pro Pad ----------------
      Werden nur beim Abspielen angewendet, die Originaldatei bleibt unverändert. */
-  const FX_DEFAULT = { volume: 1, reverse: false, hp: 0, lp: 0, clean: false, eq: false, comp: false, limit: false };
+  const FX_DEFAULT = { volume: 1, reverse: false, pitch: 0, hp: 0, lp: 0, dist: 0, reverb: 0, clean: false, eq: false, comp: false, limit: false };
   function padFx(pad){ return Object.assign({}, FX_DEFAULT, pad.fx || {}); }
-  function hasRenderFx(fx){ return fx.reverse || fx.hp > 0 || fx.lp > 0 || fx.clean || fx.eq || fx.comp || fx.limit; }
+  function hasRenderFx(fx){
+    return fx.reverse || fx.pitch !== 0 || fx.hp > 0 || fx.lp > 0 || fx.dist > 0 || fx.reverb > 0 || fx.clean || fx.eq || fx.comp || fx.limit;
+  }
   function fxKey(pad){
     const fx = padFx(pad);
-    return hasRenderFx(fx) ? JSON.stringify([fx.reverse, fx.hp, fx.lp, fx.clean, fx.eq, fx.comp, fx.limit]) : "";
+    return hasRenderFx(fx) ? JSON.stringify([fx.reverse, fx.pitch, fx.hp, fx.lp, fx.dist, fx.reverb, fx.clean, fx.eq, fx.comp, fx.limit]) : "";
   }
   function padVolume(pad){ return padFx(pad).volume; }
   function fxActive(pad){
@@ -1178,8 +1152,11 @@
     const fx = {
       volume: num(raw.volume, 0, 2, 1),
       reverse: raw.reverse === true,
+      pitch: Math.round(num(raw.pitch, -12, 12, 0)),
       hp: num(raw.hp, 0, 2000, 0),
       lp: num(raw.lp, 0, 20000, 0),
+      dist: Math.round(num(raw.dist, 0, 100, 0)),
+      reverb: Math.round(num(raw.reverb, 0, 100, 0)),
       clean: raw.clean === true, eq: raw.eq === true, comp: raw.comp === true, limit: raw.limit === true
     };
     if(fx.lp > 0 && fx.lp < 300) fx.lp = 300;
@@ -1201,16 +1178,133 @@
       }
       out = reversed;
     }
+    if(fx.pitch !== 0) out = await pitchShift(out, fx.pitch);
     if(fx.hp > 0 || fx.lp > 0){
       out = await renderChain(out, (ctx, add) => {
         if(fx.hp > 0){ const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = fx.hp; f.Q.value = 0.707; add(f); }
         if(fx.lp > 0){ const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = fx.lp; f.Q.value = 0.707; add(f); }
       });
     }
+    if(fx.dist > 0) out = await distort(out, fx.dist);
+    if(fx.reverb > 0) out = await addReverb(out, fx.reverb);
     if(fx.clean || fx.eq || fx.comp || fx.limit){
       out = await enhanceBuffer(out, { clean: fx.clean, eq: fx.eq, comp: fx.comp, limit: fx.limit });
     }
+    // Schutz vor Übersteuern (Verzerrung und Hall können lauter machen): nur leiser, nie lauter.
+    const peak = bufferPeak(out);
+    if(peak > 0.98) scaleBuffer(out, 0.98 / peak);
     return out;
+  }
+
+  function newBufferLike(channels, length, sampleRate){
+    return getAudioCtx().createBuffer(channels, Math.max(1, length), sampleRate);
+  }
+
+  /* Zeitdehnung ohne Tonhöhenänderung (WSOLA): Der Sound wird in kurze, überlappende Stücke
+     zerlegt und neu zusammengesetzt. Jedes Stück wird leicht verschoben, damit es möglichst
+     nahtlos an das vorherige passt. factor > 1 macht den Sound länger. */
+  function timeStretch(buffer, factor){
+    const sr = buffer.sampleRate, len = buffer.length, chs = buffer.numberOfChannels;
+    const N = 2 * Math.round(sr * 0.02);   // Stücklänge ca. 40 ms
+    const Hs = N / 2, Ha = Hs / factor;    // Schrittweite Ausgabe / Eingabe
+    const tol = Math.round(sr * 0.005);     // Suchbereich ±5 ms
+    const outLen = Math.round(len * factor);
+    const win = new Float32Array(N);
+    for(let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    const inputs = [];
+    for(let ch = 0; ch < chs; ch++) inputs.push(buffer.getChannelData(ch));
+    const mono = new Float32Array(len);
+    inputs.forEach(d => { for(let i = 0; i < len; i++) mono[i] += d[i] / chs; });
+    const outs = [];
+    for(let ch = 0; ch < chs; ch++) outs.push(new Float32Array(outLen + N));
+    let prev = 0;
+    for(let k = 0; k * Hs < outLen; k++){
+      const nominal = Math.round(k * Ha);
+      let best = nominal;
+      if(k > 0){
+        const natural = prev + Hs;
+        let bestScore = -Infinity;
+        for(let d = -tol; d <= tol; d += 4){
+          const cand = nominal + d;
+          if(cand < 0 || cand + N > len) continue;
+          let score = 0;
+          for(let i = 0; i < Hs; i += 8){ const j = natural + i; if(j < len) score += mono[j] * mono[cand + i]; }
+          if(score > bestScore){ bestScore = score; best = cand; }
+        }
+      }
+      best = Math.max(0, Math.min(best, len - 1));
+      const o = k * Hs;
+      for(let ch = 0; ch < chs; ch++){
+        const src = inputs[ch], dst = outs[ch];
+        for(let i = 0; i < N; i++){ const j = best + i; if(j < len) dst[o + i] += src[j] * win[i]; }
+      }
+      prev = best;
+    }
+    const result = newBufferLike(chs, outLen, sr);
+    for(let ch = 0; ch < chs; ch++) result.copyToChannel(outs[ch].subarray(0, outLen), ch);
+    return result;
+  }
+
+  // Tonhöhe in Halbtönen ändern, die Länge bleibt gleich: erst umrechnen (ändert Tonhöhe und Länge),
+  // dann die Länge mit timeStretch zurückholen.
+  async function pitchShift(buffer, semitones){
+    const ratio = Math.pow(2, semitones / 12);
+    const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const off = new Offline(buffer.numberOfChannels, Math.max(1, Math.ceil(buffer.length / ratio)), buffer.sampleRate);
+    const src = off.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = ratio;
+    src.connect(off.destination);
+    src.start();
+    const resampled = await off.startRendering();
+    return timeStretch(resampled, buffer.length / resampled.length);
+  }
+
+  // Verzerrung: weiche Sättigung, Stärke 1–100.
+  async function distort(buffer, amount){
+    const k = amount / 100 * 60;
+    const curve = new Float32Array(2048);
+    for(let i = 0; i < curve.length; i++){
+      const x = i / (curve.length - 1) * 2 - 1;
+      curve[i] = (1 + k) * x / (1 + k * Math.abs(x));
+    }
+    return renderChain(buffer, (ctx, add) => {
+      const pre = ctx.createGain();
+      pre.gain.value = 1 + amount / 100 * 2;
+      const shaper = ctx.createWaveShaper();
+      shaper.curve = curve;
+      shaper.oversample = "4x";
+      const post = ctx.createGain();
+      post.gain.value = 1 / (1 + amount / 100 * 1.5);
+      add(pre); add(shaper); add(post);
+    });
+  }
+
+  // Hall: künstlicher Raum aus abklingendem Rauschen. Stärke 1–100 regelt Raumgröße und Anteil.
+  async function addReverb(buffer, amount){
+    const sr = buffer.sampleRate;
+    const seconds = 0.6 + amount / 100 * 3;
+    const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const off = new Offline(2, buffer.length + Math.ceil(seconds * sr), sr);
+    const impulse = off.createBuffer(2, Math.ceil(seconds * sr), sr);
+    let seed = 12345;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 * 2 - 1; };
+    for(let ch = 0; ch < 2; ch++){
+      const d = impulse.getChannelData(ch);
+      for(let i = 0; i < d.length; i++) d[i] = rnd() * Math.pow(1 - i / d.length, 3);
+    }
+    const src = off.createBufferSource();
+    src.buffer = buffer;
+    const dry = off.createGain();
+    dry.gain.value = 1 - amount / 100 * 0.35;
+    const conv = off.createConvolver();
+    conv.buffer = impulse;
+    const wet = off.createGain();
+    wet.gain.value = 0.1 + amount / 100 * 0.5;
+    src.connect(dry); dry.connect(off.destination);
+    src.connect(conv); conv.connect(wet); wet.connect(off.destination);
+    src.start();
+    return off.startRendering();
   }
 
   /* ---------------- Playback: persistent per-pad audio ---------------- */
@@ -2199,6 +2293,9 @@
     volume: document.getElementById("fxVolume"), volumeVal: document.getElementById("fxVolumeVal"),
     hp: document.getElementById("fxHp"), hpVal: document.getElementById("fxHpVal"),
     lp: document.getElementById("fxLp"), lpVal: document.getElementById("fxLpVal"),
+    pitch: document.getElementById("fxPitch"), pitchVal: document.getElementById("fxPitchVal"),
+    dist: document.getElementById("fxDist"), distVal: document.getElementById("fxDistVal"),
+    reverb: document.getElementById("fxReverb"), reverbVal: document.getElementById("fxReverbVal"),
     reverse: document.getElementById("fxReverse"),
     clean: document.getElementById("fxClean"), eq: document.getElementById("fxEq"),
     comp: document.getElementById("fxComp"), limit: document.getElementById("fxLimit"),
@@ -2218,6 +2315,11 @@
     fxEls.volumeVal.textContent = Math.round(parseFloat(fxEls.volume.value) * 100) + " %";
     fxEls.hpVal.textContent = formatHz(hpFromSlider(parseFloat(fxEls.hp.value)));
     fxEls.lpVal.textContent = formatHz(lpFromSlider(parseFloat(fxEls.lp.value)));
+    const semi = parseInt(fxEls.pitch.value, 10);
+    fxEls.pitchVal.textContent = semi === 0 ? "0" : (semi > 0 ? "+" : "−") + Math.abs(semi) + " HT";
+    const pct = v => { const n = parseInt(v, 10); return n === 0 ? "Aus" : n + " %"; };
+    fxEls.distVal.textContent = pct(fxEls.dist.value);
+    fxEls.reverbVal.textContent = pct(fxEls.reverb.value);
   }
   function refreshFxUI(pad){
     const fx = padFx(pad);
@@ -2225,6 +2327,9 @@
     fxEls.volume.value = fx.volume;
     fxEls.hp.value = hpToSlider(fx.hp);
     fxEls.lp.value = lpToSlider(fx.lp);
+    fxEls.pitch.value = fx.pitch;
+    fxEls.dist.value = fx.dist;
+    fxEls.reverb.value = fx.reverb;
     ["reverse", "clean", "eq", "comp", "limit"].forEach(k => { fxEls[k].checked = !!fx[k]; });
     showFxLabels();
   }
@@ -2251,7 +2356,7 @@
     showFxLabels();
   });
   [fxEls.volume, fxEls.speed].forEach(el => el.addEventListener("change", () => { saveState(); render(); }));
-  [fxEls.hp, fxEls.lp].forEach(el => el.addEventListener("input", showFxLabels));
+  [fxEls.hp, fxEls.lp, fxEls.pitch, fxEls.dist, fxEls.reverb].forEach(el => el.addEventListener("input", showFxLabels));
 
   // Filter, Rückwärts und Verbesserungen: Sound wird im Hintergrund neu berechnet.
   async function applyFxChange(){
@@ -2259,6 +2364,9 @@
     storeFx(pad, Object.assign(padFx(pad), {
       hp: hpFromSlider(parseFloat(fxEls.hp.value)),
       lp: lpFromSlider(parseFloat(fxEls.lp.value)),
+      pitch: parseInt(fxEls.pitch.value, 10),
+      dist: parseInt(fxEls.dist.value, 10),
+      reverb: parseInt(fxEls.reverb.value, 10),
       reverse: fxEls.reverse.checked,
       clean: fxEls.clean.checked, eq: fxEls.eq.checked, comp: fxEls.comp.checked, limit: fxEls.limit.checked
     }));
@@ -2271,7 +2379,7 @@
     prewarmPad(pad);
     if(editingId === pad.id){ fxEls.status.textContent = FX_NOTE; fxEls.status.classList.remove("fx-busy"); }
   }
-  [fxEls.hp, fxEls.lp, fxEls.reverse, fxEls.clean, fxEls.eq, fxEls.comp, fxEls.limit]
+  [fxEls.hp, fxEls.lp, fxEls.pitch, fxEls.dist, fxEls.reverb, fxEls.reverse, fxEls.clean, fxEls.eq, fxEls.comp, fxEls.limit]
     .forEach(el => el.addEventListener("change", applyFxChange));
 
   document.getElementById("fxPreviewBtn").addEventListener("click", () => {
