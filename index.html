@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ojSPJMjfT6RfI3dkhBGWpmmyPTGvC8myTlIcV4tUwbo='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BDOFgq2wTTMiVm0erKvzasJZXUnfH6UNUdhRquTrXFE='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Soundboard</title>
 <style>
@@ -120,9 +120,12 @@
     opacity:0; background:rgba(0,0,0,.32); border:none; color:var(--text); width:22px;height:22px; border-radius:var(--radius-sm);
     display:flex; align-items:center; justify-content:center; transition:opacity .12s, background .12s;
   }
-  .pad.playing .pad-stop{opacity:1;}
+  .pad.playing .pad-stop{opacity:1; width:30px; height:30px; background:var(--danger); color:#1a0606;}
   .pad-stop:hover{background:rgba(255,93,93,.5);}
+  .pad.playing .pad-stop:hover{background:#ff7373;}
   .pad-stop svg{width:10px;height:10px;}
+  .pad.playing .pad-stop svg{width:13px; height:13px;}
+  .pad.playing{background:color-mix(in srgb, var(--pad-color, var(--accent)) 13%, var(--panel));}
   .pad-handle{
     opacity:0; background:rgba(0,0,0,.32); border:none; color:var(--text); width:22px;height:22px; border-radius:var(--radius-sm);
     display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none;
@@ -208,6 +211,15 @@
   .trim-row label{font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em; width:32px; flex:none;}
   .trim-row input[type=range]{flex:1; width:auto;}
   .trim-row .time{font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); width:36px; text-align:right; flex:none;}
+  .enhance{border:none; margin:6px 0 0; padding:12px 0 0; border-top:1px solid var(--border); display:grid; gap:6px;}
+  .enhance legend{font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); padding:0 0 6px; float:left; width:100%;}
+  .field .enh{display:flex; align-items:flex-start; gap:10px; padding:8px 10px; margin:0; text-transform:none; letter-spacing:0; font-family:var(--font-body); font-size:inherit; color:var(--text); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; transition:border-color .12s, background .12s;}
+  .enh:hover{border-color:var(--border-strong);}
+  .enh:has(input:checked){border-color:rgba(127,217,196,.45); background:rgba(127,217,196,.06);}
+  .enh input{margin:2px 0 0; accent-color:var(--accent-2); width:15px; height:15px; flex:none;}
+  .enh b{display:block; font-size:12.5px; font-weight:600;}
+  .enh small{display:block; font-size:11px; color:var(--text-dim); line-height:1.4; margin-top:1px;}
+  .enh-note{font-size:10.5px; color:var(--text-faint); margin:2px 0 0; font-family:var(--font-mono);}
   .editor-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px; flex-wrap:wrap;}
 
   .toast{
@@ -219,6 +231,50 @@
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .toast .dot{width:6px;height:6px;border-radius:50%; background:var(--accent);}
 
+  .toolbar-main{gap:12px; margin-bottom:12px;}
+  .toolbar-settings{gap:14px 18px; align-items:flex-end;}
+  .setting{display:flex; flex-direction:column; gap:6px;}
+  .setting-label{font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint);}
+  .btn.stop-all{
+    background:var(--danger); border-color:var(--danger); color:#1a0606; font-weight:700; font-size:14px;
+    padding:13px 22px; gap:10px; letter-spacing:.03em; box-shadow:0 6px 18px -10px rgba(255,93,93,.8);
+  }
+  .btn.stop-all:hover{background:#ff7373; border-color:#ff7373;}
+  .btn.stop-all svg{width:15px; height:15px;}
+  .btn.stop-all kbd{font-family:var(--font-mono); font-size:10px; font-weight:600; padding:2px 5px; border-radius:3px; background:rgba(0,0,0,.18); color:#1a0606;}
+  .volume-chip{padding:12px 15px;}
+  .volume-chip input[type=range]{width:120px;}
+  footer.manage{max-width:1180px; margin:34px auto 0; padding:18px 24px 0; border-top:1px solid var(--border);}
+  .toolbar-manage{gap:8px;}
+  .toolbar-manage .setting-label{margin-right:6px;}
+  .toolbar-manage .btn{padding:7px 11px; font-size:11px;}
+  .fab-stop{
+    position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:60;
+    display:none; align-items:center; gap:9px; height:54px; padding:0 22px; border-radius:27px;
+    background:var(--danger); color:#1a0606; border:none; font-size:14px; font-weight:700; letter-spacing:.03em;
+    box-shadow:0 10px 28px -8px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .fab-stop svg{width:15px; height:15px;}
+  .fab-stop:hover{background:#ff7373;}
+  .fab-stop:focus-visible{outline:2px solid var(--text); outline-offset:3px;}
+  body.has-playing .fab-stop{display:inline-flex;}
+  @media (max-width:560px){
+    header{padding:28px 16px 18px;}
+    main{padding:8px 16px 0;}
+    footer.manage{padding:18px 16px 0;}
+    .pads{grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;}
+    .pad{padding:10px;}
+    .btn.stop-all{flex:1 1 auto; justify-content:center;}
+    .volume-chip{flex:1 1 auto;}
+    .volume-chip input[type=range]{flex:1; width:auto;}
+    .btn.stop-all kbd{display:none;}
+  }
+  .mode-switch{display:inline-flex; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; background:var(--panel);}
+  .mode-btn{background:transparent; border:none; color:var(--text-dim); padding:9px 12px; font-size:12px; font-weight:500; letter-spacing:.02em;}
+  .mode-btn + .mode-btn{border-left:1px solid var(--border);}
+  .mode-btn:hover{color:var(--text); background:var(--panel-2);}
+  .mode-btn[aria-pressed="true"]{background:var(--accent-dim); color:var(--accent); font-weight:700;}
+  .mode-btn:focus-visible{outline:1px solid var(--accent); outline-offset:-2px;}
   .midi-chip{padding:5px 8px 5px 13px;}
   .midi-chip select{width:auto; max-width:190px; padding:4px 6px; font-size:12px; color-scheme:dark;}
   .midi-chip .btn{padding:5px 9px; border-color:transparent; background:transparent;}
@@ -244,17 +300,37 @@
   <span class="rivet tl"></span><span class="rivet tr"></span>
   <div class="kicker">Soundboard · Live-Einheit</div>
   <h1>Spiel deine Sounds</h1>
-  <p class="subtitle">Tippe auf ein Pad, um einen Sound abzuspielen — beliebig viele gleichzeitig. Nochmal tippen stoppt den Sound und startet ihn neu von vorn.</p>
+  <p class="subtitle">Tippe auf ein Pad, um einen Sound abzuspielen. Unten stellst du ein, ob mehrere Sounds übereinander laufen und ob nochmal Tippen den Sound neu startet oder stoppt.</p>
 
-  <div class="toolbar">
-    <div class="chip">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
-      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.85">
-    </div>
-    <button class="btn danger-outline" id="stopAllBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+  <div class="toolbar toolbar-main">
+    <button class="btn stop-all" id="stopAllBtn" type="button" title="Alle Sounds stoppen (Esc)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
       Alle stoppen
+      <kbd>Esc</kbd>
     </button>
+    <div class="chip volume-chip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.85" aria-label="Lautstärke">
+    </div>
+  </div>
+
+  <div class="toolbar toolbar-settings">
+    <div class="setting">
+      <span class="setting-label" id="playModeLabel">Mehrere Sounds</span>
+      <div class="mode-switch" role="group" aria-labelledby="playModeLabel">
+        <button class="mode-btn" type="button" data-setting="play" data-value="multi" title="Mehrere Sounds laufen übereinander">Gleichzeitig</button>
+        <button class="mode-btn" type="button" data-setting="play" data-value="single" title="Ein neuer Sound stoppt den vorherigen">Einzeln</button>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="setting-label" id="retriggerLabel">Nochmal drücken</span>
+      <div class="mode-switch" role="group" aria-labelledby="retriggerLabel">
+        <button class="mode-btn" type="button" data-setting="retrigger" data-value="restart" title="Ein laufender Sound startet von vorn">Neu starten</button>
+        <button class="mode-btn" type="button" data-setting="retrigger" data-value="stop" title="Ein laufender Sound wird angehalten">Stoppen</button>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="setting-label">MIDI</span>
     <div class="chip midi-chip">
       <span class="midi-led" id="midiLed" title="Leuchtet bei jedem Tastenanschlag vom Controller"></span>
       <button class="btn" id="midiEnableBtn" type="button">MIDI aktivieren</button>
@@ -262,7 +338,18 @@
       <span class="midi-last hidden-input" id="midiLast" title="Zuletzt empfangene Taste"></span>
       <button class="btn hidden-input" id="midiLearnBtn" type="button">Anlernen</button>
     </div>
-    <div class="spacer"></div>
+    </div>
+  </div>
+  <p class="midi-hint hidden-input" id="midiHint" aria-live="polite"></p>
+</header>
+
+<main>
+  <div class="pads" id="padsGrid"></div>
+</main>
+
+<footer class="manage">
+  <div class="toolbar toolbar-manage">
+    <span class="setting-label">Verwalten</span>
     <button class="btn ghost" id="exportBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       Sichern
@@ -281,12 +368,12 @@
       Zurücksetzen
     </button>
   </div>
-  <p class="midi-hint hidden-input" id="midiHint" aria-live="polite"></p>
-</header>
+</footer>
 
-<main>
-  <div class="pads" id="padsGrid"></div>
-</main>
+<button class="fab-stop" id="floatingStopBtn" type="button" title="Alle Sounds stoppen (Esc)">
+  <svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+  Stopp
+</button>
 
 <div class="overlay" id="overlay">
   <div class="modal">
@@ -359,7 +446,15 @@
           <input type="range" id="trimEnd" min="0" max="1" step="0.01" value="1">
           <span class="time" id="trimEndLabel">0:00</span>
         </div>
-        <audio id="editorPreviewAudio"></audio>
+        <fieldset class="enhance">
+          <legend>Automatisch verbessern</legend>
+          <label class="enh"><input type="checkbox" id="enhClean"><span><b>Brummen entfernen</b><small>Filtert Tiefen unter 80 Hz: Trittschall, Wind, Netzbrummen</small></span></label>
+          <label class="enh"><input type="checkbox" id="enhEq"><span><b>Stimme klarer (EQ)</b><small>Weniger Dröhnen, mehr Präsenz und Luft</small></span></label>
+          <label class="enh"><input type="checkbox" id="enhComp"><span><b>Kompressor</b><small>Gleicht leise und laute Stellen an</small></span></label>
+          <label class="enh"><input type="checkbox" id="enhLimit"><span><b>Lauter machen + Limiter</b><small>Bringt den Sound auf eine einheitliche Lautstärke, ohne zu übersteuern</small></span></label>
+          <label class="enh"><input type="checkbox" id="enhTrim"><span><b>Stille abschneiden</b><small>Entfernt Pausen am Anfang und Ende</small></span></label>
+          <p class="enh-note">„Vorschau“ spielt das Ergebnis mit allen gewählten Verbesserungen.</p>
+        </fieldset>
         <div class="editor-actions">
           <button class="btn ghost" id="previewTrimBtn" type="button">Vorschau</button>
           <button class="btn ghost" id="discardEditBtn" type="button">Verwerfen</button>
@@ -430,8 +525,12 @@
   const LS_VOL = "soundboard_volume_v4";
   const LS_HIDDEN = "soundboard_hidden_repo_v4";
   const LS_MIDI = "soundboard_midi_v1";
+  const LS_MODE = "soundboard_mode_v1";
+  const LS_RETRIGGER = "soundboard_retrigger_v1";
 
   let pads = [];
+  let playMode = "multi"; // "multi" = gleichzeitig, "single" = neuer Sound stoppt den alten
+  let retriggerMode = "restart"; // "restart" = nochmal drücken startet neu, "stop" = stoppt
   let volume = 0.85;
   let midiAccess = null;
   let midiLearnActive = false;
@@ -456,6 +555,8 @@
     }catch(e){ pads = []; }
     const v = localStorage.getItem(LS_VOL);
     volume = v !== null ? parseFloat(v) : 0.85;
+    playMode = localStorage.getItem(LS_MODE) === "single" ? "single" : "multi";
+    retriggerMode = localStorage.getItem(LS_RETRIGGER) === "stop" ? "stop" : "restart";
   }
   function saveState(){
     localStorage.setItem(LS_PADS, JSON.stringify(pads));
@@ -518,6 +619,7 @@
           color: entry.color || PALETTE[colorCursor % PALETTE.length],
           key: assignedKey,
           speed: entry.speed || 1,
+          start: Number(entry.start) || 0,
           hasSound: true,
           hasOverride: false
         };
@@ -526,6 +628,8 @@
       } else {
         pad.soundFile = "sounds/" + entry.file;
         pad.hasSound = true;
+        // Der Startpunkt gehört zur Datei, nicht zu den eigenen Einstellungen. Darum gilt er immer.
+        pad.start = Number(entry.start) || 0;
         if(!pad.userEdited){
           if(entry.label !== undefined) pad.label = entry.label;
           if(entry.emoji !== undefined) pad.emoji = entry.emoji;
@@ -774,7 +878,10 @@
       });
     }
 
+    // Laufende Sounds nach dem Neuaufbau wieder markieren.
     padVoices.forEach((voices, padId) => updatePlayingClass(padId, true));
+    padAudioElements.forEach((audio, padId) => { if(!audio.paused && !audio.ended) updatePlayingClass(padId, true); });
+    document.body.classList.toggle("has-playing", !!grid.querySelector(".pad.playing"));
     prewarmAll();
   }
 
@@ -985,6 +1092,8 @@
       hasOverride: !!raw.hasOverride
     };
     const midi = raw.midi;
+    const start = Number(raw.start);
+    pad.start = Number.isFinite(start) && start > 0 && start < 600 ? start : 0;
     const validMidi = midi && Number.isInteger(midi.channel) && midi.channel >= 0 && midi.channel <= 15
       && Number.isInteger(midi.note) && midi.note >= 0 && midi.note <= 127;
     if(validMidi) pad.midi = { channel: midi.channel, note: midi.note };
@@ -1129,7 +1238,8 @@
     source.buffer = buffer;
     source.connect(gain);
     gain.connect(getMasterGain());
-    const voice = { source, gain, startedAt: ctx.currentTime, duration: buffer.duration };
+    const offset = startOffset(pad, buffer.duration);
+    const voice = { source, gain, startedAt: ctx.currentTime - offset, duration: buffer.duration };
     source.onended = () => {
       const current = padVoices.get(pad.id);
       if(!current) return;
@@ -1141,7 +1251,7 @@
         setProgress(pad.id, 0);
       }
     };
-    source.start();
+    source.start(0, offset);
     voices.push(voice);
     padVoices.set(pad.id, voices);
     updatePlayingClass(pad.id, true);
@@ -1161,6 +1271,30 @@
       progressFrame = requestAnimationFrame(tick);
     };
     progressFrame = requestAnimationFrame(tick);
+  }
+
+  // Startpunkt aus dem Manifest, z. B. um Stille am Anfang zu überspringen.
+  // Gilt nicht für eigene Versionen eines Presets, die haben eine andere Datei.
+  function startOffset(pad, duration){
+    if(pad.source !== "repo" || pad.hasOverride) return 0;
+    const start = Number(pad.start) || 0;
+    return start > 0 && (!duration || start < duration) ? start : 0;
+  }
+
+  // "Einzeln": Ein neuer Sound stoppt alle anderen.
+  function stopOtherPads(padId){
+    [...padVoices.keys()].forEach(id => {
+      if(id === padId) return;
+      stopVoices(id);
+      updatePlayingClass(id, false);
+      setProgress(id, 0);
+    });
+    padAudioElements.forEach((audio, id) => {
+      if(id === padId || audio.paused) return;
+      try{ audio.pause(); audio.currentTime = 0; }catch(e){}
+      updatePlayingClass(id, false);
+      setProgress(id, 0);
+    });
   }
 
   function isNormalSpeed(pad){
@@ -1187,8 +1321,23 @@
     }
   }
 
+  function isPadPlaying(padId){
+    if(padVoices.has(padId)) return true;
+    const audio = padAudioElements.get(padId);
+    return !!(audio && !audio.paused && !audio.ended);
+  }
+
+  let playRequest = 0;
   async function playPad(pad, options){
-    const overlap = !!(options && options.overlap);
+    const request = ++playRequest;
+    // Modus "Nochmal drücken: Stoppen": Ein laufendes Pad wird angehalten statt neu gestartet.
+    if(retriggerMode === "stop" && isPadPlaying(pad.id)){
+      stopPad(pad.id);
+      return;
+    }
+    const single = playMode === "single";
+    if(single) stopOtherPads(pad.id);
+    const overlap = !single && retriggerMode === "restart" && !!(options && options.overlap);
     const entry = padBuffers.get(pad.id);
     if(entry && entry.buffer && isNormalSpeed(pad) && getAudioCtx().state === "running"){
       const element = padAudioElements.get(pad.id);
@@ -1199,11 +1348,13 @@
     stopVoices(pad.id);
     const audio = await ensureAudioElement(pad);
     if(!audio){ toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden."); return; }
+    // Im Modus "Einzeln" gewinnt der zuletzt ausgelöste Sound, auch wenn ein älterer noch lädt.
+    if(single && request !== playRequest) return;
     audio.volume = volume;
     audio.playbackRate = pad.speed || 1;
     try{
       audio.pause();
-      audio.currentTime = 0;
+      audio.currentTime = startOffset(pad, audio.duration);
       setProgress(pad.id, 0);
       await audio.play();
       updatePlayingClass(pad.id, true);
@@ -1277,6 +1428,8 @@
   function updatePlayingClass(padId, on){
     const el = grid.querySelector(`.pad[data-id="${padId}"]`);
     if(el) el.classList.toggle("playing", on);
+    // Zeigt den schwebenden Stopp-Knopf, solange irgendein Pad läuft.
+    document.body.classList.toggle("has-playing", !!grid.querySelector(".pad.playing"));
   }
 
   function stopAll(){
@@ -1332,7 +1485,7 @@
   const recordBtn = document.getElementById("recordBtn");
   const recordTimerEl = document.getElementById("recordTimer");
   const editorPanel = document.getElementById("editorPanel");
-  const editorPreviewAudio = document.getElementById("editorPreviewAudio");
+  const previewTrimBtn = document.getElementById("previewTrimBtn");
   const waveformCanvas = document.getElementById("waveformCanvas");
   const trimHighlight = document.getElementById("trimHighlight");
   const trimStartInput = document.getElementById("trimStart");
@@ -1356,7 +1509,6 @@
   let recordStartTime = null;
   let recordTimerInterval = null;
   let currentAudioBuffer = null;
-  let editorPreviewUrl = null;
 
   function getAudioCtx(){
     if(!window.__sbCtx) window.__sbCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1464,16 +1616,155 @@
     return new Blob([view], { type: "audio/wav" });
   }
 
-  async function openEditorWithBlob(blob, labelHint){
+  /* ---------------- Automatische Verbesserung ----------------
+     Läuft komplett lokal mit der Web-Audio-API (OfflineAudioContext), nichts wird hochgeladen. */
+  const enhanceInputs = {
+    clean: document.getElementById("enhClean"),
+    eq: document.getElementById("enhEq"),
+    comp: document.getElementById("enhComp"),
+    limit: document.getElementById("enhLimit"),
+    trim: document.getElementById("enhTrim")
+  };
+  function readEnhanceOptions(){
+    const o = {};
+    Object.keys(enhanceInputs).forEach(k => { o[k] = enhanceInputs[k].checked; });
+    return o;
+  }
+  function setEnhanceOptions(on){
+    Object.values(enhanceInputs).forEach(input => { input.checked = on; });
+  }
+
+  function dbToGain(db){ return Math.pow(10, db / 20); }
+  function bufferPeak(buffer){
+    let peak = 0;
+    for(let ch = 0; ch < buffer.numberOfChannels; ch++){
+      const data = buffer.getChannelData(ch);
+      for(let i = 0; i < data.length; i++){ const v = Math.abs(data[i]); if(v > peak) peak = v; }
+    }
+    return peak;
+  }
+  function bufferRmsDb(buffer){
+    // Nur hörbare Stellen zählen, damit lange Pausen das Ergebnis nicht verfälschen.
+    let sum = 0, count = 0;
+    for(let ch = 0; ch < buffer.numberOfChannels; ch++){
+      const data = buffer.getChannelData(ch);
+      for(let i = 0; i < data.length; i++){ const v = data[i]; if(Math.abs(v) > 0.003){ sum += v * v; count++; } }
+    }
+    return count ? 10 * Math.log10(sum / count) : -Infinity;
+  }
+  function scaleBuffer(buffer, gain){
+    for(let ch = 0; ch < buffer.numberOfChannels; ch++){
+      const data = buffer.getChannelData(ch);
+      for(let i = 0; i < data.length; i++) data[i] *= gain;
+    }
+  }
+
+  async function renderChain(buffer, build){
+    const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const off = new Offline(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+    const src = off.createBufferSource();
+    src.buffer = buffer;
+    let node = src;
+    build(off, (next) => { node.connect(next); node = next; });
+    node.connect(off.destination);
+    src.start();
+    return off.startRendering();
+  }
+
+  function trimSilence(buffer){
+    const threshold = dbToGain(-45);
+    const pad = Math.round(buffer.sampleRate * 0.03);
+    let first = buffer.length, last = -1;
+    for(let ch = 0; ch < buffer.numberOfChannels; ch++){
+      const data = buffer.getChannelData(ch);
+      for(let i = 0; i < data.length; i++){ if(Math.abs(data[i]) > threshold){ if(i < first) first = i; break; } }
+      for(let i = data.length - 1; i >= 0; i--){ if(Math.abs(data[i]) > threshold){ if(i > last) last = i; break; } }
+    }
+    if(last < first) return buffer;
+    const start = Math.max(0, first - pad);
+    const end = Math.min(buffer.length, last + pad);
+    return trimAudioBuffer(buffer, start / buffer.sampleRate, end / buffer.sampleRate, getAudioCtx());
+  }
+
+  async function enhanceBuffer(buffer, o){
+    let out = buffer;
+    if(o.clean || o.eq || o.comp){
+      out = await renderChain(out, (ctx, add) => {
+        if(o.clean){
+          // Steiler Hochpass (24 dB/Oktave, zwei Stufen): entfernt Brummen, Trittschall und Wind unter 80 Hz.
+          [0.541, 1.307].forEach(q => {
+            const hp = ctx.createBiquadFilter();
+            hp.type = "highpass"; hp.frequency.value = 80; hp.Q.value = q;
+            add(hp);
+          });
+        }
+        if(o.eq){
+          // Weniger Dröhnen, mehr Verständlichkeit und etwas Luft.
+          const mud = ctx.createBiquadFilter();
+          mud.type = "peaking"; mud.frequency.value = 250; mud.Q.value = 1; mud.gain.value = -3;
+          const presence = ctx.createBiquadFilter();
+          presence.type = "peaking"; presence.frequency.value = 3200; presence.Q.value = 0.9; presence.gain.value = 3;
+          const air = ctx.createBiquadFilter();
+          air.type = "highshelf"; air.frequency.value = 9000; air.gain.value = 2;
+          add(mud); add(presence); add(air);
+        }
+        if(o.comp){
+          // Gleicht leise und laute Stellen an.
+          const comp = ctx.createDynamicsCompressor();
+          comp.threshold.value = -24; comp.knee.value = 8; comp.ratio.value = 4;
+          comp.attack.value = 0.005; comp.release.value = 0.2;
+          add(comp);
+        }
+      });
+    }
+    if(o.limit){
+      // Auf eine einheitliche Lautheit bringen (höchstens +24 dB), Spitzen danach mit dem Limiter abfangen.
+      const rms = bufferRmsDb(out);
+      const gain = isFinite(rms) ? Math.min(dbToGain(-16 - rms), dbToGain(24)) : 1;
+      out = await renderChain(out, (ctx, add) => {
+        const pre = ctx.createGain();
+        pre.gain.value = gain;
+        const limiter = ctx.createDynamicsCompressor();
+        limiter.threshold.value = -3; limiter.knee.value = 0; limiter.ratio.value = 20;
+        limiter.attack.value = 0.001; limiter.release.value = 0.08;
+        add(pre); add(limiter);
+      });
+    }
+    if(o.comp || o.limit){
+      // Spitzen auf -1 dBFS bringen: gleicht die Lautstärke an und verhindert Übersteuern.
+      const peak = bufferPeak(out);
+      if(peak > 0) scaleBuffer(out, dbToGain(-1) / peak);
+    }
+    if(o.trim) out = trimSilence(out);
+    return out;
+  }
+
+  async function renderEditedBuffer(){
+    const start = parseFloat(trimStartInput.value);
+    const end = parseFloat(trimEndInput.value);
+    const trimmed = trimAudioBuffer(currentAudioBuffer, start, end, getAudioCtx());
+    return enhanceBuffer(trimmed, readEnhanceOptions());
+  }
+
+  let previewSource = null;
+  function stopEditorPreview(){
+    if(previewSource){
+      previewSource.onended = null;
+      try{ previewSource.stop(); }catch(e){}
+      previewSource = null;
+    }
+    previewTrimBtn.textContent = "Vorschau";
+  }
+
+  async function openEditorWithBlob(blob, labelHint, options){
     pendingLabelHint = labelHint ? labelHint.replace(/\.[^/.]+$/, "") : null;
     try{
       const arrayBuffer = await blob.arrayBuffer();
       const ctx = getAudioCtx();
       currentAudioBuffer = await ctx.decodeAudioData(arrayBuffer);
-
-      if(editorPreviewUrl) URL.revokeObjectURL(editorPreviewUrl);
-      editorPreviewUrl = URL.createObjectURL(blob);
-      editorPreviewAudio.src = editorPreviewUrl;
+      stopEditorPreview();
+      // Bei Aufnahmen ist die Verbesserung vorausgewählt, bei Dateien aus.
+      setEnhanceOptions(!!(options && options.recorded));
 
       editorPanel.classList.remove("hidden-input");
       drawWaveform(waveformCanvas, currentAudioBuffer);
@@ -1491,10 +1782,9 @@
   }
 
   function clearEditor(){
-    if(editorPreviewUrl){ URL.revokeObjectURL(editorPreviewUrl); editorPreviewUrl = null; }
+    stopEditorPreview();
     currentAudioBuffer = null;
     pendingLabelHint = null;
-    editorPreviewAudio.removeAttribute("src");
     editorPanel.classList.add("hidden-input");
     trimStartInput.value = 0;
     trimEndInput.value = 1;
@@ -1548,7 +1838,7 @@
       recordBtn.innerHTML = iconSvg("mic") + " Sound aufnehmen";
       const type = mediaRecorder.mimeType || "audio/webm";
       const blob = new Blob(recordedChunks, { type });
-      await openEditorWithBlob(blob, "Aufnahme");
+      await openEditorWithBlob(blob, "Aufnahme", { recorded: true });
     };
 
     mediaRecorder.start();
@@ -1578,20 +1868,27 @@
     updateTrimHighlight();
   });
 
-  document.getElementById("previewTrimBtn").addEventListener("click", () => {
-    if(!editorPreviewUrl) return;
-    const start = parseFloat(trimStartInput.value);
-    const end = parseFloat(trimEndInput.value);
-    try{ editorPreviewAudio.currentTime = start; }catch(e){}
-    editorPreviewAudio.play();
-    const onTime = () => {
-      if(editorPreviewAudio.currentTime >= end){
-        editorPreviewAudio.pause();
-        editorPreviewAudio.removeEventListener("timeupdate", onTime);
-      }
-    };
-    editorPreviewAudio.addEventListener("timeupdate", onTime);
+  // Die Vorschau spielt den zugeschnittenen Ausschnitt mit allen gewählten Verbesserungen.
+  previewTrimBtn.addEventListener("click", async () => {
+    if(previewSource){ stopEditorPreview(); return; }
+    if(!currentAudioBuffer) return;
+    try{
+      const ctx = getAudioCtx();
+      await ctx.resume().catch(() => {});
+      const processed = await renderEditedBuffer();
+      const src = ctx.createBufferSource();
+      src.buffer = processed;
+      src.connect(getMasterGain());
+      src.onended = () => { previewSource = null; previewTrimBtn.textContent = "Vorschau"; };
+      src.start();
+      previewSource = src;
+      previewTrimBtn.textContent = "Vorschau stoppen";
+    }catch(err){
+      console.error(err);
+      toast("Vorschau nicht möglich.");
+    }
   });
+  Object.values(enhanceInputs).forEach(input => input.addEventListener("change", stopEditorPreview));
 
   document.getElementById("discardEditBtn").addEventListener("click", () => {
     clearEditor();
@@ -1600,10 +1897,9 @@
   document.getElementById("applyEditBtn").addEventListener("click", async () => {
     if(!currentAudioBuffer){ toast("Nichts zum Übernehmen."); return; }
     try{
-      const start = parseFloat(trimStartInput.value);
-      const end = parseFloat(trimEndInput.value);
-      const trimmed = trimAudioBuffer(currentAudioBuffer, start, end, getAudioCtx());
-      const wavBlob = audioBufferToWav(trimmed);
+      stopEditorPreview();
+      const processed = await renderEditedBuffer();
+      const wavBlob = audioBufferToWav(processed);
       const file = new File([wavBlob], (pendingLabelHint || "sound") + ".wav", { type: "audio/wav" });
       await commitSound(file);
       clearEditor();
@@ -1829,12 +2125,42 @@
     saveState();
   });
   document.getElementById("stopAllBtn").addEventListener("click", stopAll);
+  document.getElementById("floatingStopBtn").addEventListener("click", stopAll);
+
+  const modeButtons = document.querySelectorAll(".mode-btn");
+  const MODE_TOASTS = {
+    multi: "Gleichzeitig: Sounds laufen übereinander.",
+    single: "Einzeln: Ein neuer Sound stoppt den vorherigen.",
+    restart: "Nochmal drücken startet den Sound neu.",
+    stop: "Nochmal drücken stoppt den Sound."
+  };
+  function showPlayMode(){
+    modeButtons.forEach(btn => {
+      const current = btn.dataset.setting === "retrigger" ? retriggerMode : playMode;
+      btn.setAttribute("aria-pressed", String(btn.dataset.value === current));
+    });
+  }
+  modeButtons.forEach(btn => btn.addEventListener("click", () => {
+    if(btn.dataset.setting === "retrigger"){
+      retriggerMode = btn.dataset.value === "stop" ? "stop" : "restart";
+      try{ localStorage.setItem(LS_RETRIGGER, retriggerMode); }catch(e){}
+      toast(MODE_TOASTS[retriggerMode]);
+    } else {
+      playMode = btn.dataset.value === "single" ? "single" : "multi";
+      try{ localStorage.setItem(LS_MODE, playMode); }catch(e){}
+      toast(MODE_TOASTS[playMode]);
+    }
+    showPlayMode();
+  }));
 
   /* ---------------- Keyboard shortcuts ---------------- */
   window.addEventListener("keydown", (e) => {
     if(e.repeat) return;
-    if(e.key === "Escape" && midiLearnActive && !overlay.classList.contains("open")){
-      setMidiLearnActive(false);
+    if(e.key === "Escape"){
+      // Esc: Fenster schließen, sonst Anlernen beenden, sonst alles stoppen.
+      if(overlay.classList.contains("open")) closeModal();
+      else if(midiLearnActive) setMidiLearnActive(false);
+      else stopAll();
       return;
     }
     const tag = (e.target.tagName || "").toLowerCase();
@@ -1975,6 +2301,7 @@
   (async function init(){
     loadLocalState();
     loadMidiPrefs();
+    showPlayMode();
     volumeSlider.value = volume;
     renderSkeleton();
     await loadManifestAndMerge();

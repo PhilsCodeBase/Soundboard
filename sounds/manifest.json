@@ -19,7 +19,7 @@
   { "file": "Fail.mp3", "label": "Fail", "emoji": "", "key": "o", "color": "#ffb454" },
   { "file": "Fanfare.mp3", "label": "Fanfare", "emoji": "", "key": "p", "color": "#ffb454" },
   { "file": "Sieg.mp3", "label": "Sieg", "emoji": "", "key": "a", "color": "#ffb454" },
-  { "file": "WindowsXP.mp3", "label": "WindowsXP", "emoji": "", "key": "s", "color": "#ffb454" },
+  { "file": "WindowsXP.mp3", "label": "WindowsXP", "emoji": "", "key": "s", "color": "#ffb454", "start": 2.9 },
   { "file": "Polizei.mp3", "label": "Polizei", "emoji": "", "key": "d", "color": "#ffb454" },
   { "file": "NeinAllesGute.mp3", "label": "NeinAllesGute", "emoji": "", "key": "f", "color": "#ffb454" },
   { "file": "GibsKeineBeweise.mp3", "label": "Gibs keine Beweise", "emoji": "", "key": "g", "color": "#ffb454" },
