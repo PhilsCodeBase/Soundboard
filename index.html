@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fom2TfmdPQ7CEjcYD6JZtfMZll4KciiC5FPN/G2EkSM='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-N1I509SZq0B7zXJVw6nRtWgDqbyjNtzvx094hQofUZ8='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Soundboard</title>
 <style>
@@ -219,6 +219,19 @@
   .enh input{margin:2px 0 0; accent-color:var(--accent-2); width:15px; height:15px; flex:none;}
   .enh b{display:block; font-size:12.5px; font-weight:600;}
   .enh small{display:block; font-size:11px; color:var(--text-dim); line-height:1.4; margin-top:1px;}
+  .fx-panel{border-top:1px solid var(--border); padding-top:14px;}
+  .fx-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .fx-head > label{margin:0;}
+  .fx-head-actions{display:flex; gap:6px;}
+  .btn.fx-small{padding:6px 10px; font-size:11px;}
+  .fx-row{display:grid; grid-template-columns:86px 1fr 62px; align-items:center; gap:10px; margin-bottom:9px;}
+  .field .fx-row label{margin:0; font-size:10px;}
+  .fx-row input[type=range]{width:100%;}
+  .fx-val{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-align:right;}
+  .fx-sub{font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); margin:12px 0 6px;}
+  .fx-enh{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  .fx-panel > .enh{margin-top:4px;}
+  .fx-busy{color:var(--accent-2);}
   .enh-note{font-size:10.5px; color:var(--text-faint); margin:2px 0 0; font-family:var(--font-mono);}
   .editor-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px; flex-wrap:wrap;}
 
@@ -419,14 +432,10 @@
 
     <div class="field">
       <label>Sound</label>
+      <div id="soundSourceArea">
       <label class="dropzone" id="dropzone" for="fileInput">
         <strong>Datei auswählen</strong> oder hierher ziehen<br>MP3, WAV, OGG, M4A …
       </label>
-      <div class="file-current" id="fileCurrent"></div>
-      <div class="inline-row">
-        <button class="reset-link hidden-input" id="resetOverrideBtn">Preset wiederherstellen</button>
-        <button class="reset-link hidden-input" id="trimExistingBtn">Zuschneiden</button>
-      </div>
       <input type="file" id="fileInput" class="visually-hidden-file" accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.webm,.opus">
 
       <div class="or-divider">oder</div>
@@ -436,6 +445,12 @@
           Sound aufnehmen
         </button>
         <span class="record-timer" id="recordTimer"></span>
+      </div>
+      </div>
+      <div class="file-current" id="fileCurrent"></div>
+      <div class="inline-row">
+        <button class="reset-link hidden-input" id="resetOverrideBtn">Preset wiederherstellen</button>
+        <button class="reset-link hidden-input" id="trimExistingBtn">Zuschneiden</button>
       </div>
 
       <div class="editor-panel hidden-input" id="editorPanel">
@@ -459,7 +474,7 @@
           <label class="enh"><input type="checkbox" id="enhEq"><span><b>Stimme klarer (EQ)</b><small>Weniger Dröhnen, mehr Präsenz und Luft</small></span></label>
           <label class="enh"><input type="checkbox" id="enhComp"><span><b>Kompressor</b><small>Gleicht leise und laute Stellen an</small></span></label>
           <label class="enh"><input type="checkbox" id="enhLimit"><span><b>Lauter machen + Limiter</b><small>Bringt den Sound auf eine einheitliche Lautstärke, ohne zu übersteuern</small></span></label>
-          <label class="enh"><input type="checkbox" id="enhTrim"><span><b>Stille abschneiden</b><small>Entfernt Pausen am Anfang und Ende</small></span></label>
+          <label class="enh"><input type="checkbox" id="enhTrim"><span><b>Stille am Ende abschneiden</b><small>Stille am Anfang wird immer automatisch entfernt</small></span></label>
           <p class="enh-note">„Vorschau“ spielt das Ergebnis mit allen gewählten Verbesserungen.</p>
         </fieldset>
         <div class="editor-actions">
@@ -468,6 +483,29 @@
           <button class="btn primary" id="applyEditBtn" type="button">Übernehmen</button>
         </div>
       </div>
+    </div>
+
+    <div class="field fx-panel hidden-input" id="fxPanel">
+      <div class="fx-head">
+        <label>Klang</label>
+        <div class="fx-head-actions">
+          <button class="btn ghost fx-small" id="fxPreviewBtn" type="button">▶ Anhören</button>
+          <button class="btn ghost fx-small" id="fxResetBtn" type="button">Zurücksetzen</button>
+        </div>
+      </div>
+      <div class="fx-row"><label for="fxSpeed">Tempo</label><input type="range" id="fxSpeed" min="0.5" max="2" step="0.01"><span class="fx-val" id="fxSpeedVal"></span></div>
+      <div class="fx-row"><label for="fxVolume">Lautstärke</label><input type="range" id="fxVolume" min="0" max="2" step="0.01"><span class="fx-val" id="fxVolumeVal"></span></div>
+      <div class="fx-row"><label for="fxHp">Hochpass</label><input type="range" id="fxHp" min="0" max="100" step="1"><span class="fx-val" id="fxHpVal"></span></div>
+      <div class="fx-row"><label for="fxLp">Tiefpass</label><input type="range" id="fxLp" min="0" max="100" step="1"><span class="fx-val" id="fxLpVal"></span></div>
+      <label class="enh"><input type="checkbox" id="fxReverse"><span><b>Rückwärts abspielen</b></span></label>
+      <div class="fx-sub">Automatisch verbessern</div>
+      <div class="fx-enh">
+        <label class="enh"><input type="checkbox" id="fxClean"><span><b>Brummen entfernen</b></span></label>
+        <label class="enh"><input type="checkbox" id="fxEq"><span><b>Stimme klarer</b></span></label>
+        <label class="enh"><input type="checkbox" id="fxComp"><span><b>Kompressor</b></span></label>
+        <label class="enh"><input type="checkbox" id="fxLimit"><span><b>Lauter + Limiter</b></span></label>
+      </div>
+      <p class="enh-note" id="fxStatus">Änderungen gelten sofort. Die Originaldatei bleibt unverändert.</p>
     </div>
 
     <div class="modal-actions">
@@ -685,8 +723,8 @@
     return icons[name] || "";
   }
   function badgeText(pad){
-    if(pad.source === "repo") return pad.hasOverride ? "eigen" : "preset";
-    return "eigen";
+    const base = pad.source === "repo" && !pad.hasOverride ? "preset" : "eigen";
+    return base + (fxActive(pad) ? " · fx" : "");
   }
 
   function renderSkeleton(){
@@ -862,6 +900,7 @@
         e.preventDefault();
         el.classList.remove("dragover");
         const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if(pad.hasSound){ toast("Dieses Pad ist schon belegt. Zum Ersetzen erst löschen oder ein leeres Pad nehmen."); return; }
         if(!file || !isAudioFile(file)){ toast("Das ist keine unterstützte Audiodatei."); return; }
         openModal(pad.id);
         await openEditorWithBlob(file, file.name);
@@ -1112,12 +1151,79 @@
       && Number.isInteger(midi.note) && midi.note >= 0 && midi.note <= 127;
     if(validMidi) pad.midi = { channel: midi.channel, note: midi.note };
     else delete pad.midi;
+    const fx = sanitizeFx(raw.fx);
+    if(fx) pad.fx = fx;
+    else delete pad.fx;
     if(typeof raw.soundFile !== "string" || !/^sounds\/[^:\\]+$/.test(raw.soundFile) || raw.soundFile.includes("..")) delete pad.soundFile;
     return pad;
   }
 
+  /* ---------------- Klang-Einstellungen pro Pad ----------------
+     Werden nur beim Abspielen angewendet, die Originaldatei bleibt unverändert. */
+  const FX_DEFAULT = { volume: 1, reverse: false, hp: 0, lp: 0, clean: false, eq: false, comp: false, limit: false };
+  function padFx(pad){ return Object.assign({}, FX_DEFAULT, pad.fx || {}); }
+  function hasRenderFx(fx){ return fx.reverse || fx.hp > 0 || fx.lp > 0 || fx.clean || fx.eq || fx.comp || fx.limit; }
+  function fxKey(pad){
+    const fx = padFx(pad);
+    return hasRenderFx(fx) ? JSON.stringify([fx.reverse, fx.hp, fx.lp, fx.clean, fx.eq, fx.comp, fx.limit]) : "";
+  }
+  function padVolume(pad){ return padFx(pad).volume; }
+  function fxActive(pad){
+    return hasRenderFx(padFx(pad)) || padVolume(pad) !== 1 || !isNormalSpeed(pad);
+  }
+  // Fremde oder alte Werte (z. B. aus einer Importdatei) nur in erlaubten Grenzen übernehmen.
+  function sanitizeFx(raw){
+    if(!raw || typeof raw !== "object") return undefined;
+    const num = (v, min, max, fallback) => { const n = Number(v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback; };
+    const fx = {
+      volume: num(raw.volume, 0, 2, 1),
+      reverse: raw.reverse === true,
+      hp: num(raw.hp, 0, 2000, 0),
+      lp: num(raw.lp, 0, 20000, 0),
+      clean: raw.clean === true, eq: raw.eq === true, comp: raw.comp === true, limit: raw.limit === true
+    };
+    if(fx.lp > 0 && fx.lp < 300) fx.lp = 300;
+    return JSON.stringify(fx) === JSON.stringify(FX_DEFAULT) ? undefined : fx;
+  }
+  function elementVolume(padId){
+    const pad = pads.find(p => p.id === padId);
+    // Ein <audio>-Element kann nicht lauter als 100 % spielen.
+    return Math.min(1, volume * (pad ? padVolume(pad) : 1));
+  }
+
+  async function applyFx(buffer, fx){
+    let out = buffer;
+    if(fx.reverse){
+      const reversed = getAudioCtx().createBuffer(out.numberOfChannels, out.length, out.sampleRate);
+      for(let ch = 0; ch < out.numberOfChannels; ch++){
+        const src = out.getChannelData(ch), dst = reversed.getChannelData(ch), n = src.length;
+        for(let i = 0; i < n; i++) dst[i] = src[n - 1 - i];
+      }
+      out = reversed;
+    }
+    if(fx.hp > 0 || fx.lp > 0){
+      out = await renderChain(out, (ctx, add) => {
+        if(fx.hp > 0){ const f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = fx.hp; f.Q.value = 0.707; add(f); }
+        if(fx.lp > 0){ const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = fx.lp; f.Q.value = 0.707; add(f); }
+      });
+    }
+    if(fx.clean || fx.eq || fx.comp || fx.limit){
+      out = await enhanceBuffer(out, { clean: fx.clean, eq: fx.eq, comp: fx.comp, limit: fx.limit });
+    }
+    return out;
+  }
+
   /* ---------------- Playback: persistent per-pad audio ---------------- */
+  // Mit Klang-Einstellungen spielt auch das <audio>-Element die bearbeitete Version.
   async function ensureUrl(pad){
+    if(fxKey(pad)){
+      const entry = await ensureBuffer(pad);
+      if(entry && entry.wavUrl) return entry.wavUrl;
+    }
+    return originalUrl(pad);
+  }
+
+  async function originalUrl(pad){
     if(pad.source === "repo" && !pad.hasOverride){
       return pad.soundFile;
     }
@@ -1131,6 +1237,8 @@
 
   function invalidatePadAudio(padId){
     stopVoices(padId);
+    const entry = padBuffers.get(padId);
+    if(entry && entry.wavUrl) URL.revokeObjectURL(entry.wavUrl);
     padBuffers.delete(padId);
     const audio = padAudioElements.get(padId);
     if(audio){
@@ -1208,25 +1316,37 @@
     return masterGain;
   }
 
+  // Bereitet einen Sound vor (entpacken, Klang-Einstellungen anwenden). Ergebnis: der Eintrag in padBuffers.
   function ensureBuffer(pad){
+    const key = fxKey(pad);
     const existing = padBuffers.get(pad.id);
-    if(existing) return existing.promise;
-    const entry = { buffer: null, promise: null };
+    if(existing && existing.key === key) return existing.promise;
+    if(existing && existing.wavUrl) URL.revokeObjectURL(existing.wavUrl);
+    const entry = { key, buffer: null, leadIn: 0, wavUrl: null, promise: null };
     // One after the other, so a large board does not decode everything at once.
     entry.promise = decodeQueue.then(async () => {
-      const url = await ensureUrl(pad);
-      if(!url) return null;
+      const url = await originalUrl(pad);
+      if(!url) return entry;
       const res = await fetch(url);
-      if(!res.ok) return null;
+      if(!res.ok) return entry;
       const data = await res.arrayBuffer();
-      if(data.byteLength > MAX_DECODE_BYTES) return null;
-      const decoded = await getAudioCtx().decodeAudioData(data);
+      if(data.byteLength > MAX_DECODE_BYTES) return entry;
+      let decoded = await getAudioCtx().decodeAudioData(data);
+      if(key){
+        decoded = await applyFx(decoded, padFx(pad));
+        const url = URL.createObjectURL(audioBufferToWav(decoded));
+        // Wurde inzwischen etwas geändert, ist dieses Ergebnis veraltet.
+        if(padBuffers.get(pad.id) !== entry){ URL.revokeObjectURL(url); return entry; }
+        entry.wavUrl = url;
+      }
+      // Auch für lange Sounds merken, wo der Klang beginnt (gilt dann für das <audio>-Element).
+      entry.leadIn = detectLeadIn(decoded);
       // Lange Sounds (Musik, Einspieler) brauchen entpackt viel Speicher und keine Millisekunden-Reaktion.
       // Sie laufen weiter über das <audio>-Element.
-      if(decoded.duration > MAX_BUFFER_SECONDS) return null;
+      if(decoded.duration > MAX_BUFFER_SECONDS) return entry;
       entry.buffer = decoded;
-      return entry.buffer;
-    }).catch((err) => { console.error(err); return null; });
+      return entry;
+    }).catch((err) => { console.error(err); return entry; });
     decodeQueue = entry.promise;
     padBuffers.set(pad.id, entry);
     return entry.promise;
@@ -1255,6 +1375,7 @@
     const source = ctx.createBufferSource();
     const gain = ctx.createGain();
     source.buffer = buffer;
+    gain.gain.value = padVolume(pad);
     source.connect(gain);
     gain.connect(getMasterGain());
     const offset = startOffset(pad, buffer.duration);
@@ -1292,12 +1413,51 @@
     progressFrame = requestAnimationFrame(tick);
   }
 
-  // Startpunkt aus dem Manifest, z. B. um Stille am Anfang zu überspringen.
-  // Gilt nicht für eigene Versionen eines Presets, die haben eine andere Datei.
+  // Wo das Abspielen beginnt: ein fester Startpunkt aus dem Manifest hat Vorrang,
+  // sonst die automatisch erkannte Stille am Anfang (gilt für alle Sounds, auch eigene).
   function startOffset(pad, duration){
-    if(pad.source !== "repo" || pad.hasOverride) return 0;
-    const start = Number(pad.start) || 0;
+    let start = 0;
+    const manifestStart = Number(pad.start) || 0;
+    if(pad.source === "repo" && !pad.hasOverride && manifestStart > 0 && !padFx(pad).reverse){
+      start = manifestStart;
+    } else {
+      const entry = padBuffers.get(pad.id);
+      if(entry && entry.leadIn) start = entry.leadIn;
+    }
     return start > 0 && (!duration || start < duration) ? start : 0;
+  }
+
+  /* Stille-Erkennung: sucht in 5-ms-Fenstern die erste und letzte Stelle, die höchstens 45 dB
+     leiser ist als die lauteste Stelle. Leises Anschwellen (Applaus, Sirene) zählt so noch als Klang,
+     typisches Raumrauschen einer Aufnahme meist nicht. */
+  const LEAD_IN_PREROLL = 0.005; // 5 ms vor dem Einsatz beginnen, damit der Anschlag nicht abgeschnitten wird
+  const MIN_LEAD_IN = 0.01;      // kürzere Stille ist nicht hörbar und wird nicht übersprungen
+  function findSoundBounds(buffer){
+    const channels = [];
+    for(let ch = 0; ch < buffer.numberOfChannels; ch++) channels.push(buffer.getChannelData(ch));
+    const n = buffer.length;
+    let peak = 0;
+    channels.forEach(data => { for(let i = 0; i < n; i++){ const v = Math.abs(data[i]); if(v > peak) peak = v; } });
+    if(peak === 0) return null;
+    const threshold = Math.pow(peak * dbToGain(-45), 2);
+    const win = Math.max(1, Math.round(buffer.sampleRate * 0.005));
+    const loud = (from) => {
+      let sum = 0, count = 0;
+      const to = Math.min(n, from + win);
+      channels.forEach(data => { for(let i = from; i < to; i++){ sum += data[i] * data[i]; count++; } });
+      return count > 0 && sum / count >= threshold;
+    };
+    let first = -1, last = -1;
+    for(let i = 0; i < n; i += win){ if(loud(i)){ first = i; break; } }
+    if(first < 0) return null;
+    for(let i = Math.floor((n - 1) / win) * win; i >= first; i -= win){ if(loud(i)){ last = Math.min(n, i + win); break; } }
+    return { start: first / buffer.sampleRate, end: last / buffer.sampleRate };
+  }
+  function detectLeadIn(buffer){
+    const bounds = findSoundBounds(buffer);
+    if(!bounds) return 0;
+    const leadIn = Math.max(0, bounds.start - LEAD_IN_PREROLL);
+    return leadIn >= MIN_LEAD_IN && leadIn < buffer.duration - 0.05 ? leadIn : 0;
   }
 
   // "Einzeln": Ein neuer Sound stoppt alle anderen.
@@ -1329,7 +1489,7 @@
     const audio = await ensureAudioElement(pad);
     if(!audio) return;
     stopVoices(pad.id);
-    audio.volume = volume;
+    audio.volume = elementVolume(pad.id);
     audio.playbackRate = pad.speed || 1;
     try{
       audio.currentTime = position;
@@ -1387,7 +1547,7 @@
     if(!audio){ toast("„" + (pad.label || "Sound") + "“ konnte nicht geladen werden."); return; }
     // Im Modus "Einzeln" gewinnt der zuletzt ausgelöste Sound, auch wenn ein älterer noch lädt.
     if(single && request !== playRequest) return;
-    audio.volume = volume;
+    audio.volume = elementVolume(pad.id);
     audio.playbackRate = pad.speed || 1;
     try{
       audio.pause();
@@ -1713,19 +1873,14 @@
     return off.startRendering();
   }
 
-  function trimSilence(buffer){
-    const threshold = dbToGain(-45);
-    const pad = Math.round(buffer.sampleRate * 0.03);
-    let first = buffer.length, last = -1;
-    for(let ch = 0; ch < buffer.numberOfChannels; ch++){
-      const data = buffer.getChannelData(ch);
-      for(let i = 0; i < data.length; i++){ if(Math.abs(data[i]) > threshold){ if(i < first) first = i; break; } }
-      for(let i = data.length - 1; i >= 0; i--){ if(Math.abs(data[i]) > threshold){ if(i > last) last = i; break; } }
-    }
-    if(last < first) return buffer;
-    const start = Math.max(0, first - pad);
-    const end = Math.min(buffer.length, last + pad);
-    return trimAudioBuffer(buffer, start / buffer.sampleRate, end / buffer.sampleRate, getAudioCtx());
+  // Schneidet die Stille am Anfang immer ab, am Ende nur auf Wunsch.
+  function trimEdges(buffer, trimEnd){
+    const bounds = findSoundBounds(buffer);
+    if(!bounds) return buffer;
+    const start = Math.max(0, bounds.start - LEAD_IN_PREROLL);
+    const end = trimEnd ? Math.min(buffer.duration, bounds.end + 0.03) : buffer.duration;
+    if(start < MIN_LEAD_IN && end >= buffer.duration - 0.001) return buffer;
+    return trimAudioBuffer(buffer, start < MIN_LEAD_IN ? 0 : start, end, getAudioCtx());
   }
 
   async function enhanceBuffer(buffer, o){
@@ -1777,15 +1932,16 @@
       const peak = bufferPeak(out);
       if(peak > 0) scaleBuffer(out, dbToGain(-1) / peak);
     }
-    if(o.trim) out = trimSilence(out);
     return out;
   }
 
   async function renderEditedBuffer(){
     const start = parseFloat(trimStartInput.value);
     const end = parseFloat(trimEndInput.value);
-    const trimmed = trimAudioBuffer(currentAudioBuffer, start, end, getAudioCtx());
-    return enhanceBuffer(trimmed, readEnhanceOptions());
+    const options = readEnhanceOptions();
+    // Stille vor der Verbesserung erkennen: Kompressor und Lauter-Machen heben das Rauschen an.
+    const trimmed = trimEdges(trimAudioBuffer(currentAudioBuffer, start, end, getAudioCtx()), options.trim);
+    return enhanceBuffer(trimmed, options);
   }
 
   let previewSource = null;
@@ -1807,6 +1963,8 @@
       stopEditorPreview();
       // Bei Aufnahmen ist die Verbesserung vorausgewählt, bei Dateien aus.
       setEnhanceOptions(!!(options && options.recorded));
+      // Beim Zuschneiden eines vorhandenen Sounds übernimmt der Bereich "Klang" die Verbesserung.
+      document.querySelector(".enhance").classList.toggle("hidden-input", !!(options && options.hideEnhance));
 
       editorPanel.classList.remove("hidden-input");
       drawWaveform(waveformCanvas, currentAudioBuffer);
@@ -1963,7 +2121,7 @@
         blob = await idbGet(pad.hasOverride ? "override:" + pad.id : pad.id);
       }
       if(!blob){ toast("Sound konnte nicht geladen werden."); return; }
-      await openEditorWithBlob(blob, pad.label);
+      await openEditorWithBlob(blob, pad.label, { hideEnhance: true });
     }catch(err){
       console.error(err);
       toast("Dieser Sound kann nicht bearbeitet werden.");
@@ -2028,7 +2186,106 @@
       deletePadBtn.textContent = "Löschen";
     }
     trimExistingBtn.classList.toggle("hidden-input", !pad.hasSound);
+    // Belegte Pads: kein neues Aufnehmen/Hochladen, stattdessen Klang-Einstellungen.
+    document.getElementById("soundSourceArea").classList.toggle("hidden-input", !!pad.hasSound);
+    fxPanel.classList.toggle("hidden-input", !pad.hasSound);
+    if(pad.hasSound) refreshFxUI(pad);
   }
+
+  /* ---------------- Klang-Bereich im Bearbeiten-Fenster ---------------- */
+  const fxPanel = document.getElementById("fxPanel");
+  const fxEls = {
+    speed: document.getElementById("fxSpeed"), speedVal: document.getElementById("fxSpeedVal"),
+    volume: document.getElementById("fxVolume"), volumeVal: document.getElementById("fxVolumeVal"),
+    hp: document.getElementById("fxHp"), hpVal: document.getElementById("fxHpVal"),
+    lp: document.getElementById("fxLp"), lpVal: document.getElementById("fxLpVal"),
+    reverse: document.getElementById("fxReverse"),
+    clean: document.getElementById("fxClean"), eq: document.getElementById("fxEq"),
+    comp: document.getElementById("fxComp"), limit: document.getElementById("fxLimit"),
+    status: document.getElementById("fxStatus")
+  };
+  const FX_NOTE = "Änderungen gelten sofort. Die Originaldatei bleibt unverändert.";
+  // Regler 0 = aus, sonst logarithmisch: Hochpass 20 Hz bis 2 kHz, Tiefpass 20 kHz bis 300 Hz.
+  const hpFromSlider = v => v <= 0 ? 0 : Math.round(20 * Math.pow(100, v / 100));
+  const hpToSlider = f => f <= 0 ? 0 : Math.round(100 * Math.log(f / 20) / Math.log(100));
+  const lpFromSlider = v => v <= 0 ? 0 : Math.round(20000 * Math.pow(300 / 20000, v / 100));
+  const lpToSlider = f => f <= 0 ? 0 : Math.round(100 * Math.log(f / 20000) / Math.log(300 / 20000));
+  const formatHz = f => f <= 0 ? "Aus" : f >= 1000 ? (f / 1000).toFixed(1).replace(".", ",") + " kHz" : f + " Hz";
+
+  function editingPad(){ return pads.find(p => p.id === editingId); }
+  function showFxLabels(){
+    fxEls.speedVal.textContent = parseFloat(fxEls.speed.value).toFixed(2) + "×";
+    fxEls.volumeVal.textContent = Math.round(parseFloat(fxEls.volume.value) * 100) + " %";
+    fxEls.hpVal.textContent = formatHz(hpFromSlider(parseFloat(fxEls.hp.value)));
+    fxEls.lpVal.textContent = formatHz(lpFromSlider(parseFloat(fxEls.lp.value)));
+  }
+  function refreshFxUI(pad){
+    const fx = padFx(pad);
+    fxEls.speed.value = Number(pad.speed) || 1;
+    fxEls.volume.value = fx.volume;
+    fxEls.hp.value = hpToSlider(fx.hp);
+    fxEls.lp.value = lpToSlider(fx.lp);
+    ["reverse", "clean", "eq", "comp", "limit"].forEach(k => { fxEls[k].checked = !!fx[k]; });
+    showFxLabels();
+  }
+  function storeFx(pad, fx){
+    const clean = sanitizeFx(fx);
+    if(clean) pad.fx = clean; else delete pad.fx;
+  }
+
+  // Lautstärke und Tempo wirken sofort, ohne neu zu berechnen.
+  fxEls.volume.addEventListener("input", () => {
+    const pad = editingPad(); if(!pad) return;
+    storeFx(pad, Object.assign(padFx(pad), { volume: parseFloat(fxEls.volume.value) }));
+    (padVoices.get(pad.id) || []).forEach(v => { v.gain.gain.value = padVolume(pad); });
+    const audio = padAudioElements.get(pad.id);
+    if(audio) audio.volume = elementVolume(pad.id);
+    showFxLabels();
+  });
+  fxEls.speed.addEventListener("input", () => {
+    const pad = editingPad(); if(!pad) return;
+    pad.speed = parseFloat(fxEls.speed.value);
+    const audio = padAudioElements.get(pad.id);
+    if(audio) audio.playbackRate = pad.speed;
+    if(!isNormalSpeed(pad)) moveVoicesToElement(pad);
+    showFxLabels();
+  });
+  [fxEls.volume, fxEls.speed].forEach(el => el.addEventListener("change", () => { saveState(); render(); }));
+  [fxEls.hp, fxEls.lp].forEach(el => el.addEventListener("input", showFxLabels));
+
+  // Filter, Rückwärts und Verbesserungen: Sound wird im Hintergrund neu berechnet.
+  async function applyFxChange(){
+    const pad = editingPad(); if(!pad) return;
+    storeFx(pad, Object.assign(padFx(pad), {
+      hp: hpFromSlider(parseFloat(fxEls.hp.value)),
+      lp: lpFromSlider(parseFloat(fxEls.lp.value)),
+      reverse: fxEls.reverse.checked,
+      clean: fxEls.clean.checked, eq: fxEls.eq.checked, comp: fxEls.comp.checked, limit: fxEls.limit.checked
+    }));
+    saveState();
+    invalidatePadAudio(pad.id);
+    render();
+    fxEls.status.textContent = "Wird berechnet …";
+    fxEls.status.classList.add("fx-busy");
+    await ensureBuffer(pad);
+    prewarmPad(pad);
+    if(editingId === pad.id){ fxEls.status.textContent = FX_NOTE; fxEls.status.classList.remove("fx-busy"); }
+  }
+  [fxEls.hp, fxEls.lp, fxEls.reverse, fxEls.clean, fxEls.eq, fxEls.comp, fxEls.limit]
+    .forEach(el => el.addEventListener("change", applyFxChange));
+
+  document.getElementById("fxPreviewBtn").addEventListener("click", () => {
+    const pad = editingPad();
+    if(pad && pad.hasSound) playPad(pad, { gesture: true });
+  });
+  document.getElementById("fxResetBtn").addEventListener("click", async () => {
+    const pad = editingPad(); if(!pad) return;
+    delete pad.fx;
+    pad.speed = 1;
+    refreshFxUI(pad);
+    await applyFxChange();
+    toast("Klang zurückgesetzt.");
+  });
 
   function closeModal(){
     overlay.classList.remove("open");
@@ -2162,7 +2419,7 @@
   const volumeSlider = document.getElementById("volumeSlider");
   volumeSlider.addEventListener("input", () => {
     volume = parseFloat(volumeSlider.value);
-    padAudioElements.forEach(a => { try{ a.volume = volume; }catch(e){} });
+    padAudioElements.forEach((a, padId) => { try{ a.volume = elementVolume(padId); }catch(e){} });
     if(masterGain) masterGain.gain.value = volume;
     saveState();
   });
